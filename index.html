@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCPC2級 クイズアプリ</title>
+    <style>
+        :root {
+            --primary-color: #002B66;
+            --secondary-color: #0050B3;
+            --success-color: #2F855A;
+            --error-color: #C53030;
+            --background-color: #F7FAFC;
+            --text-color: #2D3748;
+            --highlight-color: #3182CE;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            padding: 10px;
+            min-height: 100vh;
+        }
+
+        .phone-container {
+            width: 100%;
+            max-width: 414px;
+            background-color: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        header {
+            background-color: var(--primary-color);
+            color: #ffffff;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+        }
+
+        .header-btns {
+            display: flex;
+            gap: 8px;
+        }
+
+        .analysis-btn-top {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        .bars-container {
+            width: 100%;
+            background-color: #E2E8F0;
+        }
+
+        .progress-bar {
+            height: 4px;
+            width: 0%;
+            background-color: #3182CE;
+            transition: width 0.3s ease;
+        }
+
+        .timer-bar {
+            height: 4px;
+            width: 100%;
+            background-color: #DD6B20;
+            transition: width 1s linear;
+        }
+
+        .content {
+            padding: 20px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .start-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            flex-grow: 1;
+            padding: 20px;
+        }
+
+        .start-title {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-bottom: 15px;
+        }
+
+        .start-description {
+            font-size: 0.95rem;
+            color: #4A5568;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+
+        .meta-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            color: #718096;
+            margin-bottom: 15px;
+        }
+
+        .meta-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .category-badge {
+            background-color: #EBF8FF;
+            color: #2B6CB0;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .bookmark-btn {
+            background: none;
+            border: none;
+            font-size: 1.4rem;
+            cursor: pointer;
+            color: #CBD5E0;
+            padding: 0 5px;
+            transition: transform 0.1s ease;
+        }
+        .bookmark-btn.active {
+            color: #D69E2E;
+            animation: pop 0.3s ease;
+        }
+
+        @keyframes pop {
+            50% { transform: scale(1.3); }
+        }
+
+        .question-text {
+            font-size: 1.1rem;
+            font-weight: bold;
+            line-height: 1.6;
+            margin-bottom: 25px;
+        }
+
+        .glossary-term {
+            color: var(--highlight-color);
+            font-weight: bold;
+            text-decoration: underline;
+            text-decoration-color: #90CDF4;
+            text-decoration-thickness: 2px;
+            text-underline-offset: 3px;
+            cursor: pointer;
+        }
+
+        .options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .option-btn {
+            background-color: #F7FAFC;
+            border: 2px solid #E2E8F0;
+            border-radius: 8px;
+            padding: 14px;
+            text-align: left;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            width: 100%;
+            display: block;
+            line-height: 1.4;
+        }
+
+        .option-btn.selected {
+            background-color: #EBF8FF;
+            border-color: var(--highlight-color);
+        }
+
+        .option-btn.correct {
+            background-color: #C6F6D5 !important;
+            border-color: var(--success-color) !important;
+            color: var(--success-color);
+            font-weight: bold;
+        }
+
+        .option-btn.incorrect {
+            background-color: #FED7D7 !important;
+            border-color: var(--error-color) !important;
+            color: var(--error-color);
+            opacity: 0.7;
+        }
+
+        .result-panel {
+            margin-top: 10px;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .result-title {
+            font-weight: bold;
+            font-size: 1.2rem;
+            margin-bottom: 8px;
+        }
+
+        .result-panel.correct-panel { background-color: #F0FFF4; border-left: 5px solid var(--success-color); color: #22543D; }
+        .result-panel.incorrect-panel { background-color: #FFF5F5; border-left: 5px solid var(--error-color); color: #742A2A; }
+
+        .explanation {
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin-top: 8px;
+        }
+
+        .action-container {
+            margin-top: auto;
+            padding-top: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .primary-btn {
+            width: 100%;
+            background-color: var(--secondary-color);
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 1.05rem;
+            font-weight: bold;
+            cursor: pointer;
+            text-align: center;
+        }
+        
+        .primary-btn:disabled {
+            background-color: #A0AEC0;
+            cursor: not-allowed;
+        }
+
+        .secondary-btn {
+            width: 100%;
+            background-color: #4A5568;
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .modal-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .modal-content {
+            background: white;
+            width: 90%;
+            max-height: 80%;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            overflow-y: auto;
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        .modal-header {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+            border-bottom: 2px solid #E2E8F0;
+            padding-bottom: 8px;
+        }
+
+        .modal-body {
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .close-btn {
+            background: #E2E8F0;
+            color: #4A5568;
+            border: none;
+            padding: 10px;
+            width: 100%;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .stat-card {
+            background: #F7FAFC;
+            border: 1px solid #E2E8F0;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        .stat-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.9rem;}
+        .stat-bar-bg { width: 100%; height: 8px; background: #EDF2F7; border-radius: 4px; overflow: hidden;}
+        .stat-bar-fill { height: 100%; background: var(--success-color); }
+        .stat-total { font-size: 1.5rem; font-weight: bold; text-align: center; color: var(--primary-color); margin: 15px 0;}
+    </style>
+</head>
+<body>
+
+<div class="phone-container">
+    <header>
+        <span id="app-title">MCPC2級 攻略マスター</span>
+        <div class="header-btns">
+            <button class="analysis-btn-top" onclick="showBookmarkModal()">⭐ 復習帳</button>
+            <button class="analysis-btn-top" onclick="showAnalysisModal()">📊 分析</button>
+        </div>
+    </header>
+    <div class="bars-container">
+        <div class="progress-bar" id="progress"></div>
+        <div class="timer-bar" id="timer-bar"></div>
+    </div>
+    
+    <div class="content" id="quiz-content">
+        </div>
+
+    <div class="modal-overlay" id="modal" onclick="closeModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header" id="modal-title">タイトル</div>
+            <div class="modal-body" id="modal-body">内容</div>
+            <button class="close-btn" onclick="closeModal(event)">閉じる</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- 【1】データセクション（構文エラーを完全修正済み） ---
+    const glossaryDict = {
+        "C-RAN": "信号処理部（BBU）を局舎に集約し、アンテナ側の無線部（RRH）と光回線で結ぶ効率的な基地局構成。",
+        "BBU": "基地局の「デジタル信号処理部」。C-RAN構成ではこれが一箇所に集約される。",
+        "NSA": "非独立型。4Gのコアネットワークや基地局を流用・連携させて 5G を導入する構成。",
+        "SA": "独立型。5G専用のコアネットワーク（5GC）と5G基地局だけで構成される純粋な5G。",
+        "キャリアアグリゲーション": "複数の異なる周波数帯を束ねて、1本の太い回線として高速化する技術。",
+        "OFDM": "互いに干渉しない多数の細かな周波数にデータを分散して送る方式（4G/5G/Wi-Fi）。",
+        "適応変調符号化": "電波状態に応じて、変調方式やエラー訂正率を動的に切り替える技術（AMC）。",
+        "パワーコントロール": "基地局と端末間の送信電力を必要最低限に抑え、干渉や電池消耗を防ぐ制御。",
+        "スケジューリング": "基地局が複数端末に対し、周波数や時間の無線資源をリアルタイムに割り振る制御。",
+        "L2接続": "MACアドレスベースでの接続。遅延が少なく、MVNO側で独自の通信制御が可能。",
+        "L3接続": "IPアドレスベース（ルータ経由）の接続。シンプルだが制御の自由度は低い。",
+        "ネットワークスライシング": "物理ネットワークを仮想的に薄切りにし、用途に応じた独立網を作る5Gの核技術。",
+        "MEC": "利用者に近い場所にサーバーを置き、データ往復の遅延を極限まで減らす仕組み。",
+        "AMF": "5Gコアの機能。端末の「認証」や「移動管理（位置登録）」のコントロールを担う。",
+        "SMF": "5Gコアの機能。IPアドレス割当や、通信経路（セッション）の確立・維持を管理する。",
+        "UPF": "5Gコアの機能。AMF/SMFの指示に従い、実際のユーザーデータを高速で転送・中継する。",
+        "IMS": "IPネットワーク上で音声通話（VoLTE等）や動画通信を制御する共通基盤。",
+        "アタッチ": "端末がネットワークに対して接続と位置登録の申請を行い、認証を受ける最初のプロセス。",
+        "ページング": "待ち受け中の端末に着信があった際、ネットワーク側から一斉に呼び出す動作。",
+        "サイクリックプレフィックス": "OFDMで遅延波による干渉を防ぐため、信号の末尾を先頭にコピーするガード区間（CP）。",
+        "プロセッサ": "コンピュータの頭脳。データの計算や命令の制御を行う（CPU等）。",
+        "RAM": "揮発性メモリ。CPUが高速に処理を行うための一時的な「作業机」。",
+        "ROM": "不揮発性メモリ。OSやデータを長期保管する「本棚環境」。",
+        "CCD": "画質は良いが消費電力・コストが高く、スマホではほぼ使われないイメージセンサー。",
+        "CMOS": "現在のスマホカメラの主流。画素ごとに増幅するため超低消費電力・高速読み出しが可能。",
+        "パッシブタグ": "電池を持たないRFID。リーダーの電波をエネルギーに変換する（寿命は半永久）。",
+        "アクティブタグ": "電池を内蔵したRFID。自ら電波を発信し長距離通信が可能。",
+        "デュアルSIM": "1台のスマホに2つの異なる回線契約（SIM）を同時にセットし待ち受けする機能。",
+        "eSIM": "端末に最初から埋め込まれたSIM。ネット経由で契約情報を書き換えられる。",
+        "MLO": "Wi-Fi 7の技術。複数帯域を同時に束ねて通信し、超高速・低遅延を実現する。"
+    };
+
+    const sortedTerms = Object.keys(glossaryDict).sort((a, b) => b.length - a.length);
+
+    // ベースとなる重要問題（構文エラーを徹底除去）
+    const baseQuestions = [
+        { pattern: "説明文から用語を問う", text: "信号処理部（BBU）を局舎に集約し、アンテナ側の無線部（RRH）と光回線で結ぶ効率的な基地局構成を何と呼びますか？", options: ["D-RAN", "C-RAN", "MEC", "A-Core"], answer: 1, explain: "C-RAN（Centralized RAN）は、信号処理を集約することで設備効率と動的制御能力を高める構成です。" },
+        { pattern: "用語に対する意味", text: "基地局ネットワーク技術における「C-RAN」の正しい説明はどれですか？", options: ["各アンテナ直下に独立した処理サーバーを都度完全配置する方式", "信号処理部（BBU）を一箇所に集中配置し、光回線でリモートのアンテナ部（RRH）群を制御する方式", "端末同士がアクセスポイントを介さずアドホックに直接網を組む方式", "コアネットワークのデータベースをすべて暗号化してミラーリングする方式"], answer: 1, explain: "BBUを集約して複数アンテナを協調制御し、境界エリアの干渉を低減させるのがC-RANの狙いです。" },
+        { pattern: "説明文から用語を問う", text: "モバイル基地局において、デジタル信号処理（変復調や無線リソース制御）を一手に担当するコンポーネントはどれですか？", options: ["RRH", "BBU", "UPF", "MME"], answer: 1, explain: "BBU（Baseband Unit）はベースバンド（デジタル信号）処理を行う中枢ユニットです。" },
+        { pattern: "用語に対する意味", text: "基地局ハードウェアにおける「BBU」の役割・定義として正しいものはどれですか？", options: ["電波を空間に送受信するための高周波アナログ空中線モジュール", "デジタル変復調やプロトコル処理、C-RAN構成における集約処理を担うベースバンド制御装置", "SIMプロファイルを受け取って加入者認証を行うコアネットワーク用データベース", "プロセッサの熱暴走を防ぐために設置される冷却スロットリング回路"], answer: 1, explain: "BBUはRRH（無線部）と対になり、デジタル処理層を担当します。" },
+        { pattern: "説明文から用語を問う", text: "4Gのコアネットワーク（EPC）や4G基地局をアンカーとして利用し、制御信号を流用しながら5Gの超高速データ通信を部分導入する非独立型の構成はどれですか？", options: ["SA", "NSA", "MEC", "IMS"], answer: 1, explain: "NSA（Non-Standalone）は、既存の4Gインフラを頼りにして5Gを早期展開するシステム構成です。" },
+        { pattern: "用語に対する意味", text: "5Gネットワークの「NSA構成」に関する記述として、最も適切なものはどれですか？", options: ["5G専用のコアネットワーク（5GC）と5G基地局だけでシステムが完結する方式", "4Gのコア網と4G基地局でC-Plane（制御信号）を制御し、U-Plane（データ信号）の一部に5G基地局を並用する非独立型構成", "スマートフォンのWi-FiとBluetoothを多重化して代替コアとする端末機能", "ローカル5G専用に割り当てられた免許不要の周波数帯を用いる接続形態"], answer: 1, explain: "NSAは制御を4G（LTE）に依存するため、5G本来の「超低遅延」や「ネットワークスライシング」をコア網側まで100%発揮させることはできません。" },
+        { pattern: "説明文から用語を問う", text: "4Gインフラを介在させず、5G専用に新たに開発されたコアネットワーク（5GC）と5G基地局のみで運用される独立型のシステム構成はどれですか？", options: ["NSA", "SA", "POI", "IMS"], answer: 1, explain: "SA（Standalone）は、5G本来の機能をフルスペックで利用できる独立型構成です。" },
+        { pattern: "用語に対する意味", text: "5Gネットワークの「SA構成」を導入することで初めて実現可能となる、コア網の代表的な技術はどれですか？", options: ["キャリアアグリゲーション", "ネットワークスライシング", "適応変調符号化（AMC）", "サーマルスロットリング制御"], answer: 1, explain: "SA構成（5GC）になって初めて、論理的に網を切り分ける「ネットワークスライシング」がエンドツーエンドで実装可能となります。" },
+        { pattern: "説明文から用語を問う", text: "通信事業者が保有する複数の異なる周波数帯を同時に束ね、手元の端末で1本の太い回線としてまとめて高速データ伝送を行う技術はどれですか？", options: ["キャリアアグリゲーション", "OFDM", "MLO", "ネットワークスライシング"], answer: 0, explain: "キャリアアグリゲーション（CA）は、飛び地になっている周波数帯（コンポーネントキャリア）を合算してスループットを高める技術です。" },
+        { pattern: "用語に対する意味", text: "モバイル通信技術における「キャリアアグリゲーション」の正しい説明はどれですか？", options: ["MNOとMVNOが1つの基地局鉄塔のアンテナ物理資産を相互にシェアし合う契約", "複数の異なる周波数帯を同時に使用して1つの通信セッションを構成し、実効帯域幅を広げて通信速度を向上させる技術", "音声通話パケットをWi-Fi通信網側へ自動的に迂回・中継させて負荷分散する仕組み", "1つの基地局がカバーする通信セルエリアを、六角形から同心円状へ動的変更する制御"], answer: 1, explain: "CAは、4G（LTE-Advanced）の段階から導入され、5Gでも通信速度と安定性を支える基盤技術です。" },
+        { pattern: "説明文から用語を問う", text: "周波数軸上で直交する多数の細かな周波数（サブキャリア）にデータを細分化して載せ、同時に並列伝送を行う、4G/5Gや現代Wi-Fiの基盤であるマルチキャリア変調方式は何ですか？", options: ["CDMA", "TDMA", "OFDM", "FDMA"], answer: 2, explain: "OFDM（直交周波数分割多重）は、電波の重なりを許容しつつ干渉を回避する、周波数利用効率の極めて高い方式です。" },
+        { pattern: "用語に対する意味", text: "マルチキャリア無線方式「OFDM」のメリット・特徴として、最も適切な記述はどれですか？", options: ["端末ごとに固有の「符号（コード）」を割り振ることで空間を重ね合わせる点", "周波数を限界まで高密度に配置でき、マルチパス（遅延波・反射波）によるシンボル間干渉に強い点", "アナログ音声をそのままの波形で長距離伝送できるため回路が単純化できる点", "消費電力が劇的に低いため、パッシブ型のRFIDタグ専用の変調方式である点"], answer: 1, explain: "OFDMは、後述のサイクリックプレフィックス（CP）を付加することで、ビル陰などのマルチパス反射波の干渉を無効化できる特性があります。" },
+        { pattern: "説明文から用語を問う", text: "基地局と端末の間で、電波状況（受信品質）の変化に応じて変調方式（256QAM、64QAM、QPSK等）やエラー訂正符号の割合をリアルタイムに動的変更する制御技術はどれですか？", options: ["パワーコントロール", "スケジューリング", "適応変調符号化", "ハンドオーバ"], answer: 2, explain: "適応変調符号化（AMC：Adaptive Modulation and Coding）は、電波が良い時は一度に大量のビットを送り、悪い時はタフな方式に落とす技術です。" },
+        { pattern: "用語に対する意味", text: "「適応変調符号化（AMC）」における、電波環境が悪い（ノイズが多い）エリアに端末が移動した際の具体的な挙動として正しいものはどれですか？", options: ["より情報密度の高い「256QAM」に切り替えて、一瞬でデータを送り切る", "エラーに強い（1シンボルあたりのビット数が少ない）「QPSK」等に切り替え、エラー訂正符号の比率を上げて接続を維持する", "基地局からの電波送信出力を強制的に100倍に引き上げる命令を出す", "通信を完全に遮断し、自動的にWi-Fiへのアタッチ処理を強制開始する"], answer: 1, explain: "電波が悪い時は「多値数」を減らす（QPSKは1シンボル2ビット、256QAMは8ビット）ことで、ノイズに負けない通信を行います。" },
+        { pattern: "説明文から用語を問う", text: "基地局の直下にいる近傍端末の強い電波が、遠方にいる端末の微弱な電波をかき消してしまう「遠近問題」を解消するための、無線区間の基本制御は何ですか？", options: ["スケジューリング", "パワーコントロール", "アタッチ", "ページング"], answer: 1, explain: "パワーコントロール（送信電力制御）は、各端末の電波が基地局に届く時点でほぼ同じ強さになるよう出力を微調整します。" },
+        { pattern: "用語に対する意味", text: "無線制御技術「パワーコントロール」がもたらす、スマートフォン端末側の直接的なメリットはどれですか？", options: ["画面のディスプレイ輝度が自動調整され目が疲れにくくなる", "必要最低限の送信出力で通信が行われるため、端末のバッテリー消費（電池の持ち）が大幅に節約される", "プロセッサのサーマルスロットリングが完全に無効化され動作速度が上がる", "デュアルSIMの切り替え速度が2倍に高速化される"], answer: 1, explain: "端末が常にフルパワーで電波を吹くと、他者への干渉になるだけでなく、電池が急激に消耗します。これを防ぐのがパワーコントロールです。" },
+        { pattern: "説明文から用語を問う", text: "基地局エリア内にいる無数のアクティブな端末に対し、毎秒数百〜数千回という超高速で無線資源（時間・周波数スロット）を最適に分配・割り振る動作は何ですか？", options: ["スケジューリング", "ページング", "ハンドオーバ", "アタッチ"], answer: 0, explain: "有限な電波スペースを、ユーザーの電波状態やデータの優先度（QoS）を考慮して交通整理する処理をスケジューリングと呼びます。" },
+        { pattern: "用語に対する意味", text: "基地局の無線層で行われる「スケジューリング」の評価基準（アルゴリズムの狙い）として、正しい説明はどれですか？", options: ["すべての端末に対して、通信データの容量（ギガ数）に関わらず完全に同一の固定IPを順次割り当てる動作", "各端末の電波受信品質（CQI）やサービスの優先度をもとに、最も周波数利用効率が最大化するよう動的に無線リソースを割り当てる動作", "スマートフォンのカレンダー機能の予定と、キャリアのメンテナンス予定を合致させる動作", "SIMカード内の契約満了日を自動チェックして認証を更新するスケジュール管理"], answer: 1, explain: "電波が良い端末に優先して割り当てる方式（Max C/I）や、公平性を担保する方式（Proportional Fairness）などがあります。" },
+        { pattern: "説明文から用語を問う", text: "MVNOがMNOの設備と接続する際、データリンク層で相互接続し、MVNO側が自前でゲートウェイ（P-GW/UPF）などの高度な通信制御装置を設置して運用する方式はどれですか？", "options": ["L2接続", "L3接続", "IMS接続", "C-RAN接続"], answer: 0, explain: "L2接続（レイヤ2接続）は独自のサービス設計（パケット制御、特定アプリのカウントフリーなど）が可能になる方式です。" },
+        { pattern: "用語に対する意味", text: "MVNO事業者における「L2接続」と「L3接続」の決定的な違いに関する記述として、最も適切なものはどれですか？", options: ["L2接続は音声通話のみを扱い、L3接続はデータ通信のみを扱う点", "L2接続ではMVNOが自社専用のゲートウェイ装置（P-GW等）を運用するため、独自の帯域制御やプラン設計ができるが、L3接続はMNOの設備設定に依存する点", "L2接続は4G専用の古い規格であり、5GではすべてL3接続に一本化された点", "L2接続は物理SIMカードが必須だが、L3接続ではeSIMしか使えないという点"], answer: 1, explain: "L2接続は設備投資と高度なネットワーク運用技術が必要ですが、差別化の鍵となります。" },
+        { pattern: "説明文から用語を問う", text: "MVNOの接続方式のうち、ネットワーク層（IPルータレベル）で接続し、主要なパケット管理装置もすべてMNO側のインフラに依存するため、低い初期投資で手軽に事業参入できる方式はどれですか？", options: ["L2接続", "L3接続", "MEC接続", "SA接続"], answer: 1, explain: "L3接続（レイヤ3接続）は構造がシンプルなため、早期立ち上げに向いています。" },
+        { pattern: "用語に対する意味", text: "MVNOの「L3接続」の制限事項・特徴を正しく記述しているものはどれですか？", options: ["IPアドレスベースのシンプルな接続であるため、MVNO側で独自のパケットシェーピング（柔軟な速度制限ポリシーの適用）を行うことが困難である点", "通信速度がL2接続に比べて理論上100倍遅くなるという物理的な欠陥がある点", "MNOのすべての基地局データを暗号化なしで直接引き受ける必要がある点", "通話機能（VoLTE）が一切利用できなくなる点"], answer: 0, explain: "L3接続ではMNOのパケット制御の枠組みをそのまま利用するため、独自サービスの展開には限界があります。" },
+        { pattern: "説明文から用語を問う", text: "ソフトウェア（SDN/NFV）を活用して1つの物理ネットワークを論理的に切り分け、サービス要件（超低遅延、多数接続、大容量）に特化した専用の仮想ネットワークを構築する技術はどれですか？", options: ["キャリアアグリゲーション", "ネットワークスライシング", "MEC", "適応変調符号化"], answer: 1, explain: "5G SAの最重要機能であるネットワークスライシングです。" },
+        { pattern: "用語に対する意味", text: "5Gの「ネットワークスライシング」の運用例として、最も適切なものはどれですか？", options: ["スマートフォンの画面を上半分と下半分にスライスし、YouTubeとXを同時表示する", "自動運転の制御信号（絶対的な超低遅延）の通信が、周囲の一般ユーザーの4K動画視聴トラフィックによる輻輳に巻き込まれないよう、論理的に別網として隔離・品質保証する", "大容量のファイルを4つに分割してセキュリティを担保しながら送信する", "アンテナの指向性を鋭く絞り込んで、特定の端末だけに電波を狙い撃ちで放射する"], answer: 1, explain: "重要インフラ通信（遠隔医療、自動運転など）の品質を物理網の増設なしで担保するための必須技術です。" },
+        { pattern: "説明文から用語を問う", text: "インターネットの奥深くにあるクラウドサーバーではなく、ユーザーや基地局に近いネットワークの「エッジ（縁）」側にデータ処理環境を配置して通信往復遅延を極小化する技術は何ですか？", options: ["IMS", "MEC", "UPF", "C-RAN"], answer: 1, explain: "MEC（Multi-access Edge Computing）はエッジコンピューティングをモバイル網に適用したものです。" },
+        { pattern: "用語に対する意味", text: "次世代ワイヤレスインフラにおける「MEC」の導入メリットとして、不適切な記述はどれですか？", options: ["端末のすぐ近くでデータ処理を完結できるため、エンドツーエンドの応答遅延（レイテンシ）を劇的に削減できる点", "大容量データを中央コア網まで流さずにエッジで捌けるため、バックボーン回線の帯域輻輳を緩和できる点", "スマートフォンの内部にある物理的なRAMやROMのメモリ容量を、ハードウェア的に2倍に増幅できる点", "カメラ画像解析などの高負荷な処理をエッジサーバーへオフロード（肩代わり）させ、端末の処理負荷を下げられる点"], answer: 2, explain: "MECはネットワーク側のサーバー配置技術であり、スマートフォンの物理パーツ（基板上のメモリ）を増やすものではありません。" },
+        { pattern: "説明文から用語を問う", text: "5Gコア（5GC）において、制御信号（C-Plane）の司令塔として働き、加入者の認証や暗号鍵の管理、アタッチ時の「移動管理（位置登録・ハンドオーバ制御）」を一手に担う機能モジュールはどれですか？", options: ["AMF", "SMF", "UPF", "HSS"], answer: 0, explain: "AMF（Access and Mobility Management Function）は、5Gコアでアクセスと移動制御を担当します（4GのMMEの機能の一部に相当）。" },
+        { pattern: "用語に対する意味", text: "5Gコアの「AMF」に関する説明として、明確に誤っているものはどれですか？", options: ["端末がエリアに入った際の最初の認証シグナリングを司る", "端末が基地局間をまたぐ際の移動管理（Mobility Management）を制御する", "ユーザーがやり取りするWebの閲覧データや動画のパケットそのものを、インターネットへ高速でルーティング中継する", "無線アクセスネットワーク（RAN）からの制御プレーンシグナリングの終端となる機能である"], answer: 2, explain: "ユーザーデータ（U-Plane）のパケット転送を専門に行うのは「UPF」の役割であり、AMFは制御信号（C-Plane）のみを扱います。" },
+        { pattern: "説明文から用語を問う", text: "5Gコア（5GC）において、端末へのIPアドレスの割り当て、および通信経路（セッション）の確立・維持・解放を専門に管理する機能モジュールはどれですか？", options: ["AMF", "SMF", "UPF", "BBU"], answer: 1, explain: "SMF（Session Management Function）は、セッション（通信の通り道）の管理に特化した5Gコアのコンポーネントです。" },
+        { pattern: "用語に対する意味", text: "5Gコアネットワークにおける「SMF」の主な職務・挙動として正しいものはどれですか？", "options": ["端末の位置情報を常に追跡し、着信時にページング信号を一斉送信する動作", "端末ごとにセッション（データの通り道）を確立し、適切なQoS（通信品質）ポリシーの適用を指示するとともに、IPアドレスを動的発行する役割", "カメラのCMOSセンサーから送られてくる画像パケットを直接JPEGに圧縮する機能", "SIMカードの物理的なPINコードロックをオンラインで強制解除する処理"], answer: 1, explain: "SMFの指示に基づいて、実際のデータプレーン装置であるUPFがパケットを処理します。" },
+        { pattern: "説明文から用語を問う", text: "5Gコア（5GC）において、AMFやSMFといった制御系の指示に従い、実際のユーザーデータ（パケット）のルーティング、転送、カプセル化解除を高効率・高速で実行するデータプレーン専用モジュールはどれですか？", options: ["UPF", "SMF", "IMS", "RRH"], answer: 0, explain: "UPF（User Plane Function）は、5Gにおけるデータ（U-Plane）転送の単一責任コンポーネントです。" },
+        { pattern: "用語に対する意味", text: "5Gコアの「UPF」の特徴・メリットとして、正しい記述はどれですか？", options: ["制御信号（C-Plane）の処理も同時に行うため、4Gの交換機よりも多機能で複雑である点", "コントロール機能（SMF等）から完全に分離独立しているため、MEC環境下など、ユーザーの近く（エッジ側）へUPFだけを分散配置して超低遅延転送を行える点", "アナログ音声をVoLTE用にパケット化する専用のハードウェア回路である点", "電池を持たないパッシブタグへ無線エネルギーを放射する基地局アンテナの別名"], answer: 1, explain: "5GではCUPS（Control and User Plane Separation：制御面とデータ面の完全分離）が徹底されているため、UPFをエッジ側（基地局のすぐそば）に置くことでMEC（超低遅延）が実現します。" },
+        { pattern: "説明文から用語を問う", text: "モバイルのオールIPネットワーク上において、SIPなどのプロトコルを用いて、音声通話（VoLTE）やビデオ通話の接続・切断を一元制御する共通サービス基盤システムは何ですか？", "options": ["MEC", "IMS", "AMF", "POI"], answer: 1, explain: "IMS（IP Multimedia Subsystem）は、IPネットワーク上でマルチメディア通信のセッションを制御するバックエンドインフラです。" },
+        { pattern: "用語に対する意味", text: "モバイル音声通信を支える「IMS」に関する記述として、最も適切なものはどれですか？", "options": ["SIMカードの製造工程で書き込まれる、世界固有の15桁の識別番号のシステム", "音声通話やリッチコミュニケーションをIPパケット上で確実に行うため、呼制御（セッションの制御）やQoS保証の連携を行う共通プラットフォーム", "基地局のプロセッサが過熱した際に自動稼働する冷却ソリューションの総称", "Wi-Fi 7のMLO技術における、パケットロスを検出するためのチェック用ヘッダコード"], "answer": 1, explain: "VoLTEや5GのVoNRは、すべてこのIMS基盤の上で成立しています。" },
+        { pattern: "説明文から用語を問う", text: "スマートフォンなどの端末が、電源投入時などに自身の契約情報（IMSIなど）をネットワーク側に提示し、認証・接続の許可を得て位置登録を完了させる最初のプロセスを何と呼びますか？", "options": ["ページング", "アタッチ", "ハンドオーバ", "デタッチ"], answer: 1, explain: "アタッチ（Attach）はネットワークへの「チェックイン・初期接続」動作です。" },
+        { pattern: "用語に対する意味", text: "通信シーケンスにおける「アタッチ」が正常に完了した直後の状態として、正しい説明はどれですか？", "options": ["端末の契約プロファイルが完全に削除され、工場出荷状態に戻る", "ネットワーク側に端末の最新の位置（トラッキングエリア）が登録され、いつでもデータ送受信や着信の待ち受け（アイドル状態）ができる状態になる", "カメラのCMOSセンサーのピクセル結合が開始され、夜景モードが起動する", "デュアルSIMの一方の回線が物理的に切断され、もう一方へ強制一本化される"], "answer": 1, explain: "アタッチが成功して初めて、スマートフォンに電波の強度マーク（アンテナピクト）が正常に表示されます。" },
+        { pattern: "説明文から用語を問う", text: "待ち受け状態（アイドル状態）にあるスマートフォンに対して電話などの着信があった際、ネットワーク側が端末の所在エリア（位置登録エリア）の基地局群から一斉に電波を飛ばし、端末を呼び出す動作は何ですか？", "options": ["アタッチ", "ページング", "ハンドオーバ", "スケジューリング"], answer: 1, explain: "ページング（Paging：無線呼び出し）により、端末は自分が呼び出されていることを知り、着信動作（鳴動など）へ移行します。" },
+        { pattern: "用語に対する意味", text: "モバイル通信の挙動である「ページング」に関する説明として、正しいものはどれですか？", "options": ["インターネットブラウザのページをスクロールする際の端末の画面更新動作", "ネットワーク側から待ち受け中の端末へ向け、下り方向の無線チャネルを使って一斉に呼び出しをかけるシーケンス", "通信速度を2倍にするために、パケットのヘッダをページ単位で圧縮する技術", "eSIM内のデータを別のスマートフォンへオンラインで1ページずつ転送する処理"], "answer": 1, explain: "端末は待ち受け中、バッテリーを節約するために「間欠受信」を行っており、そのタイミングでページング信号がないかをチェックしています。" },
+        { pattern: "説明文から用語を問う", text: "OFDM方式において、マルチパス（反射波・遅延波）によるシンボル間干渉（ISI）を防ぐため、送信信号の末尾の一部分を先頭側にコピーして挿入する「のりしろ（ガード区間）」の名称は何ですか？", "options": ["プリアンブル", "サイクリックプレフィックス", "パリティビット", "タイムスロット"], "answer": 1, explain: "サイクリックプレフィックス（CP：Cyclic Prefix）は、マルチパス環境下でのデジタル通信の安定性を支える盾の役割を果たします。" },
+        { pattern: "用語に対する意味", text: "「サイクリックプレフィックス（CP）」の長さを意図的に長く（拡張CP）設定した際の、トレードオフ（メリットとデメリット）として正しい説明はどれですか？", "options": ["メリット：セキュリティが100倍頑強になる ／ デメリット：端末が発熱しやすくなる", "メリット：マルチパスの遅延時間が極めて長い山岳地帯や超巨大セルでも干渉を防げる ／ デメリット：純粋なデータ（純ペロード）の送信枠が削られるため、通信速度の理論値は低下する", "メリット：バッテリーの充電速度が2倍になる ／ デメリット：カメラの画質が劣化する", "メリット：物理SIMとeSIMの同時待受が安定する ／ デメリット：音声通話の遅延が5秒に増える"], "answer": 1, explain: "CPを長くすると障害物の反射波がどんなに遅れて届いてもデータを守れますが、のりしろが増える分、実効速度は落ちます。" },
+        { pattern: "説明文から用語を問う", text: "スマートフォンのメイン基板の中枢に位置し、OSやアプリケーションから送られてくる命令の解釈、複雑な数値計算、およびシステム全体の制御を集中して実行する計算処理装置（頭脳）を何と呼びますか？", "options": ["プロセッサ", "RAM", "ROM", "CMOS"], "answer": 0, explain: "プロセッサ（CPU / SoC：System on Chip）は、スマートフォンの演算・制御を一手に行う最も重要な電子部品です。" },
+        { pattern: "用語に対する意味", text: "現代のスマートフォンのプロセッサである「SoC」の正しい定義はどれですか？", "options": ["液晶ディスプレイの裏面に配置される単一IC", "CPUのコアだけでなく、GPU、モデム、ISP、NPUなどの膨大な独立機能を1つのシリコンチップ上に超高密度に集約した統合型プロセッサ", "バッテリーセルの中に直接埋め込まれた安全チップ", "SIMスロットの開閉を検知するためだけのセンサーチップ"], "answer": 1, explain: "スマホはスペースが限られているため、パソコンのようにパーツを分散させず、SoCという1枚のチップにすべての頭脳を集約させる設計が主流です。" },
+        { pattern: "説明文から用語を問う", text: "プロセッサが直接超高速でアクセスでき、実行中アプリのプログラムや一時的な処理データを保持するが、スマートフォンの電源を切ると中身が完全に消去される揮発性メモリは何ですか？", "options": ["ROM", "RAM", "フラッシュメモリ", "セキュアエレメント"], "answer": 1, explain: "RAM（Random Access Memory）は、CPUが今まさに使うデータを広げておく「作業机」に相当します。" },
+        { pattern: "用語に対する意味", text: "スマートフォンのメモリスペックにおける「RAM」と「ROM（内部ストレージ）」の性質の違いに関する記述として、最も適切なものはどれですか？", "options": ["RAMは写真や動画を何年も保存しておく場所であり、ROMは電源を切るとデータが消える一時領域である", "RAMは電源を切るとデータが消える揮発性メモリであり、ROMは電源を切ってもアプリや写真が消えない不揮発性メモリである", "RAMはキャリアの電波を受信するためのメモリで、ROMはWi-Fi専用のメモリである", "RAMはカメラモジュールの中にしか存在せず、ROMはプロセッサの内部にしか存在しない"], "answer": 1, explain: "RAMが多いほど、多数のアプリを同時に立ち上げても重くなりにくくなります。" },
+        { pattern: "説明文から用語を問う", text: "スマートフォンにインストールしたアプリ、撮影した写真・動画ファイル、OSのシステム自体を永久保存しておく、電源を切ってもデータが消えない不揮発性メモリの環境・呼称は何ですか？", "options": ["RAM", "ROM", "キャッシュメモリ", "TEE"], "answer": 1, explain: "ROM（Read Only Memory）は、現代のスマートフォンにおいては「NAND型フラッシュメモリ（内部ストレージ）」のことを指します。" },
+        { pattern: "用語に対する意味", text: "スマートフォンの「ROM（フラッシュメモリ）」の管理に関する記述として、最も適切なものはどれですか？", "options": ["長期間使用してもデータの読み書き速度が一切低下しない永久不滅の特性を持つ", "データの書き込みや消去を繰り返すことで物理的に素子が徐々に劣化するため、空き容量の偏りを防ぐ「ウェアレベリング」等の寿命延長制御が行われている", "RAMの容量が足りなくなった際に、物理的なRAMチップを内部で自動生成する機能がある", "内部データは常にキャリア側と完全同期保存されている"], "answer": 1, "explain": "フラッシュメモリには書き換え寿命があるため、SoC内のコントローラが特定の区画だけが劣化するのを防ぐ制御（ウェアレベリング）をバックグラウンドで行っています。" },
+        { pattern: "説明文から用語を問う", text: "かつてデジタルカメラで主流だったが、消費電力が大きく製造コストも高いため、現在の一般的なスマートフォンカメラではほぼ完全に淘汰された過去のイメージセンサー（撮像素子）の規格は何ですか？", "options": ["CMOS", "CCD", "OLED", "TFT"], "answer": 1, explain: "CCD（Charge Coupled Device）は画質面で優れていましたが、スマホに求められる「省電力」「高速読み出し」の要求を満たせず、CMOSに主役を譲りました。" },
+        { pattern: "用語に対する意味", text: "「CCD」と「CMOS」を比較した際の、CCDの明確な弱点（スマホで使われなくなった理由）はどれですか？", "options": ["CMOSに比べて光を捉える能力が著しく低く、昼間でも写真が真っ暗になる点", "画素ごとの信号を順次転送する構造上、高速連写や動画撮影時の読み出しが遅く、かつ消費電力が極めて大きい点", "物理的な厚みが10cm以上あるため、スマートフォンの薄い筐体に収まらない点", "撮影した画像がすべてモノクロになってしまう点"], "answer": 1, explain: "CMOSは画素ごとにアンプ（増幅器）を配置して一瞬で電子をデジタル変換できるため、スマホの「4K動画」や「超高速連写」に圧倒的に有利です。" },
+        { pattern: "説明文から用語を問う", text: "画素ごとに微小な信号増幅アンプを組み込むことで、超高速のデータ読み出しと圧倒的な低消費電力を両立させ、現代の全スマホのカメラに100%搭載されているイメージセンサー規格は何ですか？", "options": ["CCD", "CMOS", "LCD", "FED"], "answer": 1, explain: "CMOS（Complementary Metal-Oxide-Semiconductor）イメージセンサーは、スマホカメラの多眼化や高画素化を支えるコアパーツです。" },
+        { pattern: "用語に対する意味", text: "スマートフォン向け「CMOSイメージセンサー」の最新の進化・機能トレンドに関する記述として、最も適切なものはどれですか？", "options": ["夜間撮影時に内蔵の物理ミラーを機械式でシャッフルする仕組み", "隣り合う複数の画素を1つの巨大な画素として擬似的に扱い、暗所感度を劇的に向上させる「画素ビンニング」や、積層型構造の採用", "撮影写真を自動的にSIMカードスロット内のROMに暗号化保存する処理", "カメラ起動中だけ5Gの通信速度が2倍になる仕組み"], "answer": 1, explain: "積層型CMOSセンサーにより、センサーの裏側に高速メモリ（DRAM）やAI回路を重ね、超スローモーション撮影なども可能になっています。" },
+        { pattern: "説明文から用語を問う", text: "内蔵電池（バッテリー）を持たず、外部のリーダーが照射する電波のエネルギーを駆動電力に変換し、IDデータを返信する半永久的な寿命を持つRFIDタグは何ですか？", "options": ["アクティブタグ", "パッシブタグ", "セミアクティブタグ", "BLEビーコン"], "answer": 1, explain: "パッシブタグ（Passive Tag）は、電池交換が不要で極めて安価に製造できるため、ICカードや商品の万引き防止タグに大量導入されています。" },
+        { pattern: "用語に対する意味", text: "RFIDにおける「パッシブタグ」の技術的限界・デメリットに関する記述として、正しいものはどれですか？", "options": ["タグの内部に強力な電池が入っているため、特殊な廃棄処理が必要な点", "自発的に電波を発信できないため、リーダーとの通信可能距離が極めて短く（数cm〜数m程度）、リーダー側の電波出力に通信品質が完全に依存する点", "一度データを書き込むと、二度と読み取ることができなくなる点", "金属製の商品に貼り付けると、通信距離が自動的に10kmに伸びる点"], "answer": 1, "explain": "パッシブタグは電磁誘導や電波放射によって手動でエネルギーをもらうため、遠距離の通信には向いていません。" },
+        { pattern: "説明文から用語を問う", text: "タグの内部に独立した電池を内蔵しており、自らの力で定期的に電波を発信し続けることで、数十m〜数百m以上の広範囲な長距離通信を可能にするRFIDタグは何ですか？", "options": ["パッシブタグ", "アクティブタグ", "CPタグ", "AKAタグ"], "answer": 1, explain: "アクティブタグ（Active Tag）は、高価格ですがコンテナの通過検知や広い資材置き場での位置管理などに使われます。" },
+        { pattern: "用語に対する意味", text: "RFIDにおける「アクティブタグ」の運用上の留意点・特徴として、適切な記述はどれですか？", "options": ["電池を持たないため、濡れた場所に放置すると電波が出なくなる点", "内蔵電池の寿命（数ヶ月〜数年）が存在するため、定期的な電池交換や本体の買い替えメンテナンスコストが発生する点", "電波出力が弱すぎるため、リーダーと物理的に接触させないとデータを読み取れない点", "1つのリーダーに対して、空間上同時に1枚しか存在できない点"], "answer": 1, explain: "アクティブタグはアクティブに電波を吹くため、電池管理が運用の最大のポイントとなります。" },
+        { pattern: "説明文から用語を問う", text: "1台のスマホの中に、例えば「MNO回線」と「MVNO回線」のように、2つの独立した通信事業者の契約情報（SIM）を同時にセットし、同時待ち受けを可能にする機能呼称は何ですか？", "options": ["キャリアアグリゲーション", "デュアルSIM", "ネットワークスライシング", "マルチアタッチ"], "answer": 1, explain: "デュアルSIM（Dual SIM）は、通信障害時のバックアップ回線確保や仕事とプライベートの番号使い分けに広く普及しています。" },
+        { pattern: "用語に対する意味", text: "デュアルSIMの動作モードの1つである「DSDV（Dual SIM Dual VoLTE）」の正しい挙動・説明はどれですか？", "options": ["2枚のSIMカードが物理的に融合して1枚に変化する仕様", "両方の回線で同時に4G/5Gの電波を掴み、双方で同時に音声通話（VoLTE）の「待ち受け」ができる仕組み（※同時通話は不可）", "片方で通話している最中、もう片方で完全に別のギガを使って超高速ダウンロードを継続できる仕組み", "現地の衛星通信（NTN）へ自動アタッチするための専用モード"], "answer": 1, explain: "DSDVは現代スマホの標準です。" },
+        { pattern: "説明文から用語を問う", text: "プラスチック製の物理カードカードではなく、スマートフォンの製造段階で基板上に最初から直接ハンダ付けされており、ネットワーク経由で契約プロファイルを書き換える埋め込み型SIMの名称は何ですか？", "options": ["物理SIM", "eSIM", "iSIM", "AKA-SIM"], "answer": 1, explain: "eSIM（Embedded SIM）は、SIMカードの配送や差し替えの手間をゼロにし、オンラインでの即時開通を実現する技術です。" },
+        { pattern: "用語に対する意味", text: "「eSIM」のプロファイル管理システムにおいて、端末側（消費者向け）が自発的に管理サーバーにアクセスして契約情報をダウンロードしてくる方式の名称は何ですか？", "options": ["プッシュ（Push）モデル方式", "プル（Pull）モデル方式（消費者主導型）", "C-RAN集中同期方式", "MECエッジキャッシング方式"], "answer": 1, explain: "コンシューマー（一般スマホ）向けのeSIMは、ユーザーがQRコードを読み取るなどしてサーバーからプロファイルを「引っ張ってくる（Pull）」モデルが標準化されています。" },
+        { pattern: "説明文から用語を問う", text: "最新のWi-Fi 7における最大の目玉技術であり、複数の異なる周波数帯・チャンネルを「同時に」束ねて、データの並列伝送や超低遅延・高信頼通信を行う機能は何ですか？", "options": ["キャリアアグリゲーション", "MLO", "OFDM", "メッシュWi-Fi"], "answer": 1, explain: "MLO（Multi-Link Operation）は、モバイルのキャリアアグリゲーションに近い概念をWi-Fiの世界で実現したコア技術です。" },
+        { pattern: "用語に対する意味", text: "Wi-Fi 7の「MLO」が、従来のWi-Fi 6までの周波数切り替えと比較して圧倒的に優れている点はどれですか？", "options": ["電子レンジが稼働した瞬間に、2.4GHz帯の電波出力を自動増幅する点", "従来はどれか1つの周波数帯しか接続できなかったのに対し、MLOは複数の周波数帯に「同時に物理接続」できるため、1つの帯域が途絶しても通信が途切れない（超低遅延・高信頼化）点", "SIMカードをWi-Fiルータの中にオンラインで自動複製する点", "通信暗号化を一切行わないことで計算ロスをゼロにする点"], "answer": 1, "explain": "MLOにより、ゲームの遅延カットや障害物の多いオフィス環境での通信スタック回避が可能になりました。" },
+        { pattern: "用語と用語の繋がり", text: "4Gコア（EPC）でC-Planeを終端する中枢は「MME」でしたが、5Gコア（5GC）でこのMMEの移動管理や認証の役割を引き継いだコンポーネントはどれですか？", "options": ["SMF", "UPF", "AMF", "IMS"], "answer": 2, explain: "MMEの移動管理・アクセス制御機能は、5GCでは「AMF」へ分離・継承されました。" },
+        { pattern: "本番を想定した応用問題", text: "4Gコアのデータ転送装置である「S-GW/P-GW」の役割は、5GのSA構成（5GC）においてはどの単一コンポーネントに集約・統合されましたか？", "options": ["AMF", "SMF", "UPF", "BBU"], "answer": 2, explain: "4Gのゲートウェイ群のU-Plane（データ面）処理は、5GCでは「UPF」へ完全に一本化されました。" },
+        { pattern: "状況下における対策方法", text: "スマホ内部でFeliCaデータや生体認証データを安全に処理したい。OSが乗っ取られても絶対にアクセスできない論理的に隔離された超高セキュリティ領域を何と呼びますか？", "options": ["メインのRAMキャッシュ", "セキュアエレメント（TEE / SE）", "ROMの公開ストレージフォルダ", "C-RANプロトコルセクタ"], "answer": 1, explain: "重要な秘密情報は、メインOSから隔離されたセキュアエレメントやTEE（Trusted Execution Environment）で厳重に保護されます。" },
+        { pattern: "用語に対する意味", text: "モバイル通信における「AKA（Authentication and Key Agreement）」の目的として、正しいものはどれですか？", "options": ["ウェブサイトの会員登録を簡略化する機能", "端末（SIM）とコア網が互いに「本物」であるか二方向で検証し合い、無線区間を暗号化するための共有鍵を安全に生成する仕組み", "紛失したスマホを遠隔からロックするシステム", "Wi-Fiの暗号化パスワードを自動交換する仕組み"], "answer": 1, explain: "AKA認証により、なりすまし基地局への誤接続やデータの傍受を防ぎます。" },
+        { pattern: "本番を想定した応用問題", text: "高負荷なゲームアプリを長時間プレイした際、SoCの過熱による熱暴走を防ぐため、システムが自動でCPUの動作クロック数や電圧を引き下げる安全装置の名称は何ですか？", "options": ["パワーコントロール", "サーマルスロットリング", "適応変調符号化", "スケジューリングリミッター"], "answer": 1, explain: "サーマルスロットリングが作動すると、一時的にゲームのフレームレートが落ちたりします。" },
+        { pattern: "説明文から用語を問う", text: "企業や自治体が、自社の工場敷地内やビル内などの限定されたエリアに「自前専用」で構築・運用できる独自の5Gネットワーク制度は何ですか？", "options": ["パブリック5G", "ローカル5G", "メッシュWi-Fi", "プライベートLTE-L3"], "answer": 1, explain: "ローカル5Gは、キャリアの通信障害の影響を完全に回避できるためDXインフラとして注目されています。" },
+        { pattern: "状況下における対策方法", text: "カメラモジュールにおいて、手ブレによって写真がブレるのを防ぐため、物理的にレンズやイメージセンサーを微小に動かして打ち消すハードウェア機能は何ですか？", "options": ["画素ビンニング", "光学式手ブレ補正（OIS）", "電子式サーマルシャッター", "CMOS増幅アンプ制御"], "answer": 1, explain: "OIS（Optical Image Stabilization）は、ジャイロセンサーで手の揺れを検知しレンズ等をシフトさせてブレを相殺します。" },
+        { pattern: "本番を想定した応用問題", text: "スマホのスペック表にある「リフレッシュレート：120Hz」の正しい定義・意味はどれですか？", "options": ["1秒間にバッテリーから給電される回数", "1秒間に画面の表示データが新しく描き換わる（更新される）回数であり、数値が高いほど映像が滑らかに見える", "ガラスの表面についた微細な傷が修復される回数", "5Gの電波をディスプレイが反射する効率の数値"], "answer": 1, explain: "120Hzは1秒間に120回画面を書き換えます。静止画の時はリフレッシュレートを自動で落とす技術などで省電力を図っています。" },
+        { pattern: "用語と用語の繋がり", text: "スマートフォンで通話を行う技術「VoLTE」に関する説明として、最も適切なものはどれですか？", "options": ["昔ながらのアナログ通話専用の電波を別のアンテナから発信する方式", "音声をデジタルパケットに変換し、LTE網の上で、IMS基盤による呼制御とQoS優先制御を用いて高品質・低遅延に通話を実現する方式", "Wi-Fi接続時しか電話がかけられなくなる仕様", "通話の暗号鍵をパッシブタグへバックアップするモード"], "answer": 1, explain: "VoLTEは、音声データを最優先でパケット転送するQoS制御を行うため、途切れにくくクリアな通話が可能です。" },
+        { pattern: "説明文から用語を問う", text: "スマホの仕様にある「IP68」などの防塵・防水規格において、最初の数字（6）と次の数字（8）が表している保護対象の組み合わせとして正しいものはどれですか？", "options": ["前：液晶の傷への強さ ／ 後：背面ガラスの割れにくさ", "前：人体や固形物・チリの侵入に対する保護等級（防塵） ／ 後：水の浸入に対する保護等級（防水）", "前：5G電波の遮蔽耐性 ／ 後：Wi-Fi電波の透過率", "前：耐熱温度 ／ 後：耐冷温度"], "answer": 1, explain: "「6」は防塵として最高等級、「8」は防水として最高等級を意味します。" },
+        { pattern: "用語に対する意味", text: "モバイル技術における「SIMカード」の根幹たる役割は何ですか？", "options": ["撮影した4K動画データを保存するためのフラッシュメモリ", "加入者を特定するための識別番号（IMSI）や契約情報、認証用暗号鍵が書き込まれており、ネットワークへの安全な接続・認証を成立させる役割", "処理速度を引き上げるためのグラフィックスブースター", "Wi-Fiの電波を遠くまで飛ばすための物理アンテナ"], "answer": 1, explain: "SIMは一種の超高セキュリティICカードであり、内部の暗号鍵は外部から絶対に読み出せない構造になっています。" },
+        { pattern: "状況下における対策方法", text: "2.4GHzのWi-Fiテザリングを使用中、電子レンジ等と混信して通信速度が出ない。親機側で設定変更すべき最も適切な対策はどれですか？", "options": ["テザリングの暗号化を完全にオフにする", "テザリングの周波数設定を、干渉が少なく帯域幅が広い「5GHz帯」に変更して起動する", "eSIMプロファイルを一度消去してダウンロードし直す", "カメラの画素ビンニングモードを解除する"], "answer": 1, explain: "5GHz帯のWi-Fiは、屋内では干渉が極めて少なく、非常に高速なテザリング環境を構築できます。" },
+        { pattern: "説明文から用語を問う", text: "過疎地や災害時の通信寸断エリアにおいて、上空の人工衛星から降ってくる電波をスマホで直接受信し、緊急メッセージの送受信等を可能にするインフラ技術の略称は何ですか？", "options": ["MEC", "NTN", "C-RAN", "NSA"], "answer": 1, explain: "NTN（Non-Terrestrial Network）は、スマートフォンの「真の圏外ゼロ化」を目指す最先端技術です。" },
+        { pattern: "本番を想定した応用問題", text: "5Gの無線技術「ビームフォーミング」に関する説明として、最も適切なものはどれですか？", "options": ["SoCの回路をレーザー光で焼き切る技術", "多数のアンテナ素子の電波の位相を精密に制御し、電波の指向性を特定のスマホがある方向へ集中して放射し、到達距離と通信速度を大幅に向上させる技術", "音声データを自動的に3Dサラウンド音響へ変換する機能", "SIMカードの形状をeSIMへ電子的につぶして変形させる処理"], "answer": 1, explain: "5Gの高周波数は直進しやすく減衰しやすいため、ビームフォーミング技術によって電波を鋭く絞って端末を追尾することで通信を成立させています。" },
+        { pattern: "用語に対する意味", text: "Bluetoothのオーディオ新規格「LE Audio」で採用された、標準音声コーデックの名称はどれですか？", "options": ["MP3", "LC3", "AAC", "FLAC"], "answer": 1, "explain": "LC3は、従来のSBCを上回る高音質を提供できるため、イヤホンのさらなる省電力化に貢献します。" },
+        { pattern: "説明文から用語を問う", text: "家の中やオフィス内に複数のサテライト（子機）を分散配置し、互いに連携し合うことで電波の死角を無くして単一SSIDのまま移動できるWi-Fiネットワークトポロジーは何ですか？", "options": ["スターWi-Fi", "メッシュWi-Fi", "アドホックWi-Fi", "MLO-Wi-Fi"], "answer": 1, "explain": "メッシュWi-Fiは、端末の移動に合わせて最も電波が強いサテライトへ裏側で自動ハンドオーバさせるためシームレスです。" },
+        { pattern: "状況下における対策方法", text: "全社員のスマホを一元管理し、業務外アプリの禁止、パスワードの強制、紛失時の遠隔データ消去（リモートワイプ）をクラウドから強制実行できるエンタープライズ向けシステムの総称は何ですか？", "options": ["APNマネージャー", "MDM（Mobile Device Management）", "IMSゲートウェイ", "AKAコントローラ"], "answer": 1, "explain": "MDMは企業支給のスマートフォンを安全にガバナンス管理するための標準的なソリューションです。" },
+        { pattern: "用語に対する意味", text: "ディスプレイの「有機EL（OLED）」が、「液晶（LCD）」と比較して決定的に優れている構造上の理由はどれですか？", "options": ["背面に巨大な物理高電圧バックライトユニットを常に必要とする点", "画素の1つ1つが自発光するためバックライトが不要であり、完全な「漆黒」を表現でき、極限まで薄型化・折り曲げができる点", "消費電力が画面の表示内容に関わらず常に一定である点", "製造コストが世界のあらゆるディスプレイの中で最も安い点"], "answer": 1, "explain": "有機ELはダークモードに設定すると「発光する素子の数」自体が激減し、スマートフォンの劇的な省電力化に直結します。" },
+        { pattern: "説明文から用語を問う", text: "物理的なケーブルを接続せず、充電パッドに端末を置くだけでワイヤレス伝送する、世界標準のワイヤレス充電規格の名称は何ですか？", "options": ["USB-PD", "Qi（チー）", "QuickCharge", "Bluetooth-Power"], "answer": 1, "explain": "WPCが策定した「Qi」規格が世界標準です。最新のQi2では磁石で位置を合わせる仕組みが導入されています。" },
+        { pattern: "本番を想定した応用問題", text: "制御信号を扱う「C-Plane」と、ユーザーデータを扱う「U-Plane」の処理装置を完全に分離独立させ、個別に拡張・配置できるようにするアーキテクチャ設計呼称は何ですか？", "options": ["C-RAN", "CUPS（Control and User Plane Separation）", "NSA", "MECエッジレイヤ"], "answer": 1, "explain": "CUPSにより、データ転送を担うU-Plane装置（UPFなど）だけを利用者の近く（MECなど）へピンポイントで配置することが可能になりました。" }
+    ];
+
+    // --- 【2】自動量産ロジック（ベース80問から200問へ拡張生成） ---
+    const allQuestionsPool = [];
+    
+    // 200問になるようにループで生成
+    for (let i = 0; i < 200; i++) {
+        const base = baseQuestions[i % baseQuestions.length];
+        const newId = i + 1;
+        
+        let ptn = base.pattern;
+        let txt = base.text;
+        let ans = base.answer;
+        let opts = [...base.options];
+        
+        // 80問目以降はバリエーションを作成（シャッフルや問題文の装飾）
+        if (i >= baseQuestions.length) {
+            // テキストの装飾
+            txt = `【演習No.${newId}】` + txt;
+            
+            // 選択肢のシャッフル（消去法防止トラップ）
+            if (opts.length >= 3) {
+                const tmp = opts[0];
+                opts[0] = opts[1];
+                opts[1] = tmp;
+                // 正解インデックスの追従
+                if (ans === 0) ans = 1;
+                else if (ans === 1) ans = 0;
+            }
+            
+            // パターンの変更
+            if (i % 2 === 0) {
+                if (ptn === "説明文から用語を問う") ptn = "応用・用語定義チェック";
+                else if (ptn === "用語に対する意味") ptn = "応用・文章理解チェック";
+            }
+        }
+        
+        allQuestionsPool.push({
+            id: newId,
+            pattern: ptn,
+            text: txt,
+            options: opts,
+            answer: ans,
+            explain: base.explain
+        });
+    }
+
+    // --- 【3】アプリのシステムとUI制御 ---
+    let currentQuizList = [];
+    let currentIndex = 0;
+    let selectedOptionIndex = null;
+    let isAnswerSubmitted = false;
+    let sessionScore = 0;
+    let timerInterval = null;
+    let timeLeft = 60;
+
+    let globalStats = JSON.parse(localStorage.getItem('mcpc_v6_single_file_stats'));
+    if (!globalStats || !globalStats.patterns) {
+        globalStats = {
+            totalQuestions: 0,
+            correctAnswers: 0,
+            wrongIds: [],       
+            bookmarkedIds: [],  
+            patterns: {
+                "用語に対する意味": { correct: 0, total: 0 },
+                "説明文から用語を問う": { correct: 0, total: 0 },
+                "状況下における対策方法": { correct: 0, total: 0 },
+                "用語と用語の繋がり": { correct: 0, total: 0 },
+                "本番を想定した応用問題": { correct: 0, total: 0 },
+                "応用・用語定義チェック": { correct: 0, total: 0 },
+                "応用・文章理解チェック": { correct: 0, total: 0 }
+            }
+        };
+    }
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playSound(type) {
+        try {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            if (type === 'correct') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(660, audioCtx.currentTime); 
+                osc.frequency.setValueAtTime(880, audioCtx.currentTime + 0.1); 
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.3);
+            } else if (type === 'incorrect') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(140, audioCtx.currentTime);
+                osc.frequency.setValueAtTime(130, audioCtx.currentTime + 0.15);
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.4);
+            }
+        } catch(e) { console.log("Audio error:", e); }
+    }
+
+    function triggerVibrate(type) {
+        if (navigator.vibrate) {
+            if (type === 'correct') {
+                navigator.vibrate([80, 50, 80]); 
+            } else if (type === 'incorrect') {
+                navigator.vibrate(300); 
+            }
+        }
+    }
+
+    function highlightTerms(text) {
+        let html = text;
+        let placeholders = [];
+        sortedTerms.forEach((term) => {
+            const regex = new RegExp(term, 'g');
+            html = html.replace(regex, (match) => {
+                placeholders.push(match);
+                return `__TERM${placeholders.length - 1}__`;
+            });
+        });
+        placeholders.forEach((term, index) => {
+            const spanHtml = `<span class="glossary-term" onclick="showGlossary('${term}', event)">${term}</span>`;
+            html = html.replace(new RegExp(`__TERM${index}__`, 'g'), spanHtml);
+        });
+        return html;
+    }
+
+    function showStartScreen() {
+        clearInterval(timerInterval);
+        document.getElementById("progress").style.width = "0%";
+        document.getElementById("timer-bar").style.width = "0%";
+        
+        const contentArea = document.getElementById("quiz-content");
+        contentArea.innerHTML = `
+            <div class="start-screen">
+                <div class="start-title">MCPC2級 クイズアプリ</div>
+                <div class="start-description">
+                    制限時間<b>1分</b>。<b>全10問</b>出題。<br><br>
+                    青色の専門用語はタップでいつでも確認。
+                </div>
+                <button class="primary-btn" style="padding:18px; font-size:1.2rem; margin-bottom:12px;" onclick="startQuiz('normal')">クイズスタート</button>
+                ${globalStats.wrongIds.length > 0 ? `<button class="secondary-btn" style="background-color:#DD6B20;" onclick="startQuiz('review')">❌ 弱点克服モード (${globalStats.wrongIds.length}問)</button>` : ''}
+            </div>
+        `;
+    }
+
+    function startQuiz(mode = 'normal') {
+        if (mode === 'review') {
+            const wrongQuestions = allQuestionsPool.filter(q => globalStats.wrongIds.includes(q.id));
+            if (wrongQuestions.length === 0) {
+                alert("現在、間違えた問題履歴はありません！");
+                showStartScreen();
+                return;
+            }
+            currentQuizList = wrongQuestions.sort(() => 0.5 - Math.random()).slice(0, 10);
+        } else if (mode === 'bookmark') {
+            const favQuestions = allQuestionsPool.filter(q => globalStats.bookmarkedIds.includes(q.id));
+            if (favQuestions.length === 0) {
+                alert("ブックマークされた問題はありません。");
+                return;
+            }
+            currentQuizList = favQuestions;
+        } else if (mode === 'normal') {
+            const shuffled = [...allQuestionsPool].sort(() => 0.5 - Math.random());
+            currentQuizList = shuffled.slice(0, 10);
+        }
+        
+        const contentArea = document.getElementById("quiz-content");
+        contentArea.innerHTML = `
+            <div class="meta-info">
+                <div class="meta-left">
+                    <span id="q-number">第 1 問</span>
+                    <span class="category-badge" id="q-pattern">出題パターン</span>
+                </div>
+                <button class="bookmark-btn" id="bookmark-icon" onclick="toggleBookmark()">☆</button>
+            </div>
+            <div class="question-text" id="q-text"></div>
+            <div class="options-container" id="options"></div>
+            <div class="result-panel" id="result-panel">
+                <div class="result-title" id="result-title"></div>
+                <div class="explanation" id="explanation"></div>
+            </div>
+            <div class="action-container" id="action-area"></div>
+        `;
+
+        currentIndex = 0;
+        sessionScore = 0;
+        loadQuestion();
+    }
+
+    function loadQuestion() {
+        clearInterval(timerInterval);
+        selectedOptionIndex = null;
+        isAnswerSubmitted = false;
+        document.getElementById("result-panel").style.display = "none";
+        
+        const actionArea = document.getElementById("action-area");
+        actionArea.innerHTML = `<button class="primary-btn" id="submit-btn" onclick="submitAnswer()" disabled>解答する</button>`;
+        
+        const q = currentQuizList[currentIndex];
+        
+        const progressPercent = (currentIndex / currentQuizList.length) * 100;
+        document.getElementById("progress").style.width = progressPercent + "%";
+        
+        const bookmarkIcon = document.getElementById("bookmark-icon");
+        if (globalStats.bookmarkedIds.includes(q.id)) {
+            bookmarkIcon.classList.add("active");
+            bookmarkIcon.innerText = "★";
+        } else {
+            bookmarkIcon.classList.remove("active");
+            bookmarkIcon.innerText = "☆";
+        }
+        
+        document.getElementById("q-number").innerText = `第 ${currentIndex + 1} 問 / 全 ${currentQuizList.length} 問 (ID:${q.id})`;
+        document.getElementById("q-pattern").innerText = q.pattern;
+        document.getElementById("q-text").innerHTML = highlightTerms(q.text);
+        
+        const optionsContainer = document.getElementById("options");
+        optionsContainer.innerHTML = "";
+        
+        q.options.forEach((option, index) => {
+            const optBtn = document.createElement("button");
+            optBtn.className = "option-btn";
+            optBtn.innerHTML = `${index + 1}. ` + highlightTerms(option);
+            optBtn.onclick = () => selectOption(index, optBtn);
+            optionsContainer.appendChild(optBtn);
+        });
+
+        timeLeft = 60;
+        const timerBar = document.getElementById("timer-bar");
+        timerBar.style.width = "100%";
+        
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            timerBar.style.width = (timeLeft / 60) * 100 + "%";
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                autoTimeout();
+            }
+        }, 1000);
+    }
+
+    function selectOption(index, btnElement) {
+        if (isAnswerSubmitted) return;
+        const buttons = document.querySelectorAll(".option-btn");
+        buttons.forEach(b => b.classList.remove("selected"));
+        btnElement.classList.add("selected");
+        selectedOptionIndex = index;
+        document.getElementById("submit-btn").disabled = false;
+    }
+
+    function autoTimeout() {
+        selectedOptionIndex = -1;
+        submitAnswer();
+    }
+
+    function submitAnswer() {
+        if (isAnswerSubmitted) return;
+        isAnswerSubmitted = true;
+        clearInterval(timerInterval);
+        
+        const q = currentQuizList[currentIndex];
+        const buttons = document.querySelectorAll(".option-btn");
+        const correctIndex = q.answer;
+        const isCorrect = (selectedOptionIndex === correctIndex);
+        
+        buttons.forEach((btn, idx) => {
+            btn.classList.remove("selected");
+            if (idx === correctIndex) btn.classList.add("correct");
+            else if (idx === selectedOptionIndex && !isCorrect) btn.classList.add("incorrect");
+            btn.style.cursor = "default";
+            btn.onclick = null;
+        });
+        
+        if (isCorrect) {
+            playSound('correct');
+            triggerVibrate('correct');
+            globalStats.wrongIds = globalStats.wrongIds.filter(id => id !== q.id);
+        } else {
+            playSound('incorrect');
+            triggerVibrate('incorrect');
+            if (!globalStats.wrongIds.includes(q.id)) {
+                globalStats.wrongIds.push(q.id);
+            }
+        }
+        
+        recordStats(q.pattern, isCorrect);
+        if(isCorrect) sessionScore++;
+        
+        const explainPrefix = (selectedOptionIndex === -1) ? "<b style='color:var(--error-color)'>【時間切れ】</b> " : "";
+        showResultPanel(isCorrect, explainPrefix + q.explain);
+        
+        const actionArea = document.getElementById("action-area");
+        if (currentIndex < currentQuizList.length - 1) {
+            actionArea.innerHTML = `<button class="primary-btn" onclick="nextQuestion()">次の問題へ</button>`;
+        } else {
+            actionArea.innerHTML = `<button class="primary-btn" onclick="showEndScreen()">クイズ結果へ</button>`;
+        }
+    }
+
+    function showResultPanel(isCorrect, text) {
+        const panel = document.getElementById("result-panel");
+        const title = document.getElementById("result-title");
+        const explain = document.getElementById("explanation");
+        panel.style.display = "block";
+        explain.innerHTML = highlightTerms(text);
+        if (isCorrect) {
+            panel.className = "result-panel correct-panel";
+            title.innerText = "⭕ 正解！";
+        } else {
+            panel.className = "result-panel incorrect-panel";
+            title.innerText = "❌ 不正解...";
+        }
+    }
+
+    function nextQuestion() {
+        currentIndex++;
+        loadQuestion();
+    }
+
+    function toggleBookmark() {
+        const q = currentQuizList[currentIndex];
+        const icon = document.getElementById("bookmark-icon");
+        const index = globalStats.bookmarkedIds.indexOf(q.id);
+        
+        if (index > -1) {
+            globalStats.bookmarkedIds.splice(index, 1);
+            icon.classList.remove("active");
+            icon.innerText = "☆";
+        } else {
+            globalStats.bookmarkedIds.push(q.id);
+            icon.classList.add("active");
+            icon.innerText = "★";
+        }
+        localStorage.setItem('mcpc_v6_single_file_stats', JSON.stringify(globalStats));
+    }
+
+    function recordStats(pattern, isCorrect) {
+        globalStats.totalQuestions++;
+        if(isCorrect) globalStats.correctAnswers++;
+        
+        // 記録用プロパティが存在しない場合は作成
+        if (!globalStats.patterns[pattern]) {
+            globalStats.patterns[pattern] = { correct: 0, total: 0 };
+        }
+        globalStats.patterns[pattern].total++;
+        if(isCorrect) globalStats.patterns[pattern].correct++;
+        
+        localStorage.setItem('mcpc_v6_single_file_stats', JSON.stringify(globalStats));
+    }
+
+    function showEndScreen() {
+        document.getElementById("progress").style.width = "100%";
+        document.getElementById("timer-bar").style.width = "0%";
+        
+        const contentArea = document.getElementById("quiz-content");
+        contentArea.innerHTML = `
+            <div class="question-text" style="text-align:center; margin-top:20px;">
+                今回のスコア: <span style="font-size:2rem; color:var(--primary-color);">${sessionScore} / ${currentQuizList.length}</span> 問正解！
+            </div>
+            <div class="action-container" id="action-area" style="margin-top:30px;">
+                <button class="primary-btn" style="margin-bottom:10px;" onclick="showStartScreen()">🏠 タイトル（スタート画面）へ戻る</button>
+            </div>
+        `;
+    }
+
+    function showAnalysisModal() {
+        const total = globalStats.totalQuestions;
+        const correct = globalStats.correctAnswers;
+        const totalRate = total > 0 ? Math.round((correct / total) * 100) : 0;
+        
+        let html = `
+            <div class="stat-total">総合正答率: ${totalRate}%<br><span style="font-size:0.9rem; color:#718096;">(過去累計：全${total}問中 ${correct}問正解)</span></div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:15px; font-size:0.9rem; background:#EDF2F7; padding:8px; border-radius:6px;">
+                <span>弱点ストック: <b>${globalStats.wrongIds.length}問</b></span>
+                <span>ブックマーク: <b>${globalStats.bookmarkedIds.length}問</b></span>
+            </div>
+            <p style="font-weight:bold; margin-bottom:10px;">📊 出題パターン別分析</p>
+        `;
+        
+        for (let key in globalStats.patterns) {
+            const data = globalStats.patterns[key];
+            if(data.total === 0) continue;
+            const rate = Math.round((data.correct / data.total) * 100);
+            const evalText = rate >= 80 ? "優秀" : rate >= 60 ? "良好" : "要復習";
+            const evalColor = rate >= 80 ? "var(--success-color)" : rate >= 60 ? "#D69E2E" : "var(--error-color)";
+            
+            html += `
+                <div class="stat-card">
+                    <div class="stat-row">
+                        <span>${key} <span style="font-size:0.8rem; color:#718096;">(${data.total}問)</span></span>
+                        <span style="color:${evalColor}; font-weight:bold;">${rate}% [${evalText}]</span>
+                    </div>
+                    <div class="stat-bar-bg">
+                        <div class="stat-bar-fill" style="width: ${rate}%; background-color: ${evalColor};"></div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        html += `<button onclick="if(confirm('今までの生涯成績をすべて消去しますか？')){localStorage.clear(); location.reload();}" style="margin-top:20px; width:100%; padding:8px; font-size:0.8rem; background:none; border:1px dashed #A0AEC0; color:#718096; border-radius:6px; cursor:pointer;">データを完全にリセットする</button>`;
+
+        openModal("累積成績分析", html);
+    }
+
+    function showBookmarkModal() {
+        const favQuestions = allQuestionsPool.filter(q => globalStats.bookmarkedIds.includes(q.id));
+        if (favQuestions.length === 0) {
+            openModal("⭐ ブックマーク復習帳", "<p style='color:#718096; text-align:center; padding:20px;'>ブックマークされた問題はまだありません。</p>");
+            return;
+        }
+        
+        let html = `<p style='margin-bottom:15px; font-size:0.9rem;'>現在 <b>${favQuestions.length}問</b> が登録されています。</p>`;
+        html += `<button class="primary-btn" style="margin-bottom:15px; font-size:0.95rem; padding:10px;" onclick="closeModal(event); startQuiz('bookmark');">⭐ ブックマークした問題だけでテストを開く</button>`;
+        
+        favQuestions.forEach((q, idx) => {
+            html += `
+                <div class="stat-card" style="font-size:0.9rem;">
+                    <div style="font-weight:bold; color:var(--primary-color); margin-bottom:5px;">ストック No.${idx+1} (ID:${q.id})</div>
+                    <div>${q.text}</div>
+                </div>
+            `;
+        });
+        openModal("⭐ ブックマーク復習帳", html);
+    }
+
+    function showGlossary(term, event) {
+        event.stopPropagation();
+        const description = glossaryDict[term];
+        openModal(`📖 専門用語：${term}`, description);
+    }
+
+    function openModal(title, bodyHtml) {
+        document.getElementById("modal-title").innerText = title;
+        document.getElementById("modal-body").innerHTML = bodyHtml;
+        document.getElementById("modal").style.display = "flex";
+    }
+
+    function closeModal(event) {
+        if(event) event.stopPropagation();
+        document.getElementById("modal").style.display = "none";
+    }
+
+    // 起動処理
+    window.onload = () => showStartScreen();
+</script>
+</body>
+</html>
