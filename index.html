@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCPC2級 クイズアプリ</title>
+    <style>
+        :root {
+            --primary-color: #002B66;
+            --secondary-color: #0050B3;
+            --success-color: #2F855A;
+            --error-color: #C53030;
+            --background-color: #F7FAFC;
+            --text-color: #2D3748;
+            --highlight-color: #3182CE;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            padding: 10px;
+            min-height: 100vh;
+        }
+
+        .phone-container {
+            width: 100%;
+            max-width: 414px;
+            background-color: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        header {
+            background-color: var(--primary-color);
+            color: #ffffff;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+        }
+
+        .header-btns { display: flex; gap: 8px; }
+        .analysis-btn-top {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white; border: none; padding: 6px 12px;
+            border-radius: 20px; font-size: 0.75rem; cursor: pointer;
+        }
+
+        .bars-container { width: 100%; background-color: #E2E8F0; }
+        .progress-bar { height: 4px; width: 0%; background-color: #3182CE; transition: width 0.3s ease; }
+        .timer-bar { height: 4px; width: 100%; background-color: #DD6B20; transition: width 1s linear; }
+
+        .content { padding: 20px; flex-grow: 1; display: flex; flex-direction: column; overflow-y: auto; }
+
+        .start-screen {
+            display: flex; flex-direction: column; align-items: center;
+            text-align: center; flex-grow: 1; padding: 10px;
+        }
+        .start-title { font-size: 1.4rem; font-weight: bold; color: var(--primary-color); margin-bottom: 10px; }
+        .start-description { font-size: 0.9rem; color: #4A5568; line-height: 1.5; margin-bottom: 25px; }
+
+        /* 💡変更点：13章まで収まるように3列スクロール表示に変更 */
+        .chapter-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%; margin-bottom: 20px;
+            max-height: 200px; overflow-y: auto; padding-right: 5px;
+        }
+        .chapter-btn {
+            background-color: #EBF8FF; color: #2B6CB0; border: 2px solid #BEE3F8;
+            padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer;
+            transition: all 0.2s; font-size: 0.85rem;
+        }
+        .chapter-btn:active { background-color: #BEE3F8; transform: scale(0.98); }
+
+        .meta-info { display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; color: #718096; margin-bottom: 15px; }
+        .category-badge { background-color: #EBF8FF; color: #2B6CB0; padding: 2px 8px; border-radius: 4px; font-weight: bold; }
+
+        .bookmark-btn { background: none; border: none; font-size: 1.4rem; cursor: pointer; color: #CBD5E0; padding: 0 5px; }
+        .bookmark-btn.active { color: #D69E2E; animation: pop 0.3s ease; }
+        @keyframes pop { 50% { transform: scale(1.3); } }
+
+        .question-text { font-size: 1.1rem; font-weight: bold; line-height: 1.6; margin-bottom: 25px; }
+        .glossary-term { color: var(--highlight-color); font-weight: bold; text-decoration: underline; text-decoration-color: #90CDF4; cursor: pointer; }
+
+        .options-container { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
+        .option-btn {
+            background-color: #F7FAFC; border: 2px solid #E2E8F0; border-radius: 8px;
+            padding: 14px; text-align: left; font-size: 0.95rem; cursor: pointer; width: 100%; line-height: 1.4;
+        }
+        .option-btn.selected { background-color: #EBF8FF; border-color: var(--highlight-color); }
+        .option-btn.correct { background-color: #C6F6D5 !important; border-color: var(--success-color) !important; color: var(--success-color); font-weight: bold; }
+        .option-btn.incorrect { background-color: #FED7D7 !important; border-color: var(--error-color) !important; color: var(--error-color); opacity: 0.7; }
+
+        .result-panel { margin-top: 10px; padding: 15px; border-radius: 8px; display: none; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .result-title { font-weight: bold; font-size: 1.2rem; margin-bottom: 8px; }
+        .correct-panel { background-color: #F0FFF4; border-left: 5px solid var(--success-color); color: #22543D; }
+        .incorrect-panel { background-color: #FFF5F5; border-left: 5px solid var(--error-color); color: #742A2A; }
+        .explanation { font-size: 0.95rem; line-height: 1.6; margin-top: 8px; }
+
+        .action-container { margin-top: auto; padding-top: 10px; display: flex; flex-direction: column; gap: 10px; }
+        .primary-btn { width: 100%; background-color: var(--secondary-color); color: white; border: none; padding: 15px; border-radius: 8px; font-size: 1.05rem; font-weight: bold; cursor: pointer; }
+        .primary-btn:disabled { background-color: #A0AEC0; cursor: not-allowed; }
+        .secondary-btn { width: 100%; background-color: #4A5568; color: white; border: none; padding: 15px; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; }
+        
+        .abort-btn { background-color: transparent; color: #A0AEC0; border: 1px solid #E2E8F0; padding: 12px; border-radius: 8px; font-size: 0.9rem; font-weight: bold; cursor: pointer; transition: all 0.2s; margin-top: 5px; }
+        .abort-btn:hover { background-color: #F7FAFC; color: #4A5568; border-color: #CBD5E0; }
+
+        .glossary-screen-title { font-size: 1.3rem; font-weight: bold; color: var(--primary-color); margin-bottom: 20px; text-align: center; }
+        .glossary-category { margin-bottom: 25px; }
+        .category-header { background-color: #E2E8F0; padding: 10px 15px; font-weight: bold; border-radius: 8px; margin-bottom: 15px; color: #2D3748; font-size: 0.95rem; }
+        .term-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+        .term-btn { background-color: white; border: 1px solid #CBD5E0; padding: 8px 14px; border-radius: 20px; font-size: 0.85rem; cursor: pointer; color: #2B6CB0; transition: background-color 0.2s; font-weight: bold; }
+        .term-btn:hover { background-color: #EBF8FF; }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        .modal-content {
+            background: white;
+            width: 85%;
+            max-width: 350px;
+            max-height: 70vh;
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            overflow-y: auto;
+            position: relative;
+            animation: modalIn 0.25s ease-out;
+        }
+        @keyframes modalIn {
+            from { transform: scale(0.9); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .modal-header { font-size: 1.15rem; font-weight: bold; color: var(--primary-color); margin-bottom: 12px; border-bottom: 2px solid #E2E8F0; padding-bottom: 10px; text-align: center; }
+        .modal-body { font-size: 1rem; line-height: 1.6; margin-bottom: 25px; color: #2D3748; }
+        .close-btn { background: var(--secondary-color); color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1rem; }
+        
+        .stat-card { background: #F7FAFC; border: 1px solid #E2E8F0; padding: 12px; border-radius: 8px; margin-bottom: 10px; }
+        .stat-total { font-size: 1.4rem; font-weight: bold; text-align: center; color: var(--primary-color); margin: 15px 0; }
+    </style>
+</head>
+<body>
+
+<div class="phone-container">
+    <header>
+        <span id="app-title">MCPC クイズアプリ</span>
+        <div class="header-btns">
+            <button class="analysis-btn-top" onclick="showGlossaryListScreen()">用語集</button>
+            <button class="analysis-btn-top" onclick="showBookmarkModal()">復習</button>
+            <button class="analysis-btn-top" onclick="showAnalysisModal()">分析</button>
+        </div>
+    </header>
+    <div class="bars-container">
+        <div class="progress-bar" id="progress"></div>
+        <div class="timer-bar" id="timer-bar"></div>
+    </div>
+    
+    <div class="content" id="quiz-content"></div>
+
+    <div class="modal-overlay" id="modal" onclick="closeModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header" id="modal-title">タイトル</div>
+            <div class="modal-body" id="modal-body">内容</div>
+            <button class="close-btn" onclick="closeModal(event)">閉じる</button>
+        </div>
+    </div>
+</div>
+
+<script src="glossary.js"></script>
+<script src="quiz_data.js"></script>
+
+<script>
+    if (typeof glossaryDict === 'undefined' || Object.keys(glossaryDict).length === 0) {
+        window.glossaryDict = {};
+        if (typeof categorizedGlossary !== 'undefined') {
+            categorizedGlossary.forEach(cat => { Object.assign(window.glossaryDict, cat.terms); });
+        }
+    }
+    if (typeof sortedTerms === 'undefined' || sortedTerms.length === 0) {
+        window.sortedTerms = Object.keys(window.glossaryDict || glossaryDict || {}).sort((a, b) => b.length - a.length);
+    }
+
+    let currentQuizList = [];
+    let currentIndex = 0;
+    let selectedOptionIndex = null;
+    let isAnswerSubmitted = false;
+    let sessionScore = 0;
+    let timerInterval = null;
+    let timeLeft = 60;
+    let currentModeName = "";
+
+    let globalStats = JSON.parse(localStorage.getItem('mcpc_v8_stats')) || {
+        totalQuestions: 0, correctAnswers: 0, wrongIds: [], bookmarkedIds: [], chapterStats: {}
+    };
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playSound(type) {
+        try {
+            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            if (type === 'correct') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(660, audioCtx.currentTime); osc.frequency.setValueAtTime(880, audioCtx.currentTime + 0.1); 
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+            } else {
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(140, audioCtx.currentTime); osc.frequency.setValueAtTime(130, audioCtx.currentTime + 0.15);
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.4);
+            }
+        } catch(e) {}
+    }
+    function triggerVibrate(type) {
+        if (navigator.vibrate) { type === 'correct' ? navigator.vibrate([80, 50, 80]) : navigator.vibrate(300); }
+    }
+
+    function highlightTerms(text) {
+        const termsArr = typeof sortedTerms !== 'undefined' ? sortedTerms : window.sortedTerms;
+        if (!termsArr || termsArr.length === 0) return text;
+        
+        let html = text;
+        let placeholders = [];
+        termsArr.forEach((term) => {
+            const regex = new RegExp(term, 'g');
+            html = html.replace(regex, (match) => {
+                placeholders.push(match); return `__TERM${placeholders.length - 1}__`;
+            });
+        });
+        placeholders.forEach((term, index) => {
+            const spanHtml = `<span class="glossary-term" onclick="showGlossary('${term}', event)">${term}</span>`;
+            html = html.replace(new RegExp(`__TERM${index}__`, 'g'), spanHtml);
+        });
+        return html;
+    }
+
+    function showStartScreen() {
+        clearInterval(timerInterval);
+        document.getElementById("progress").style.width = "0%";
+        document.getElementById("timer-bar").style.width = "0%";
+
+        const poolSize = typeof allQuestionsPool !== 'undefined' ? allQuestionsPool.length : 0;
+
+        document.getElementById("quiz-content").innerHTML = `
+            <div class="start-screen">
+                <div class="start-title">MCPC2級 クイズアプリ</div>
+                <div class="start-description">
+                    制限時間は<b>1問1分</b>。<b>全10問</b>出題。<br>
+                    <b>用語集</b>に用語説明を記載。知りたい用語をタップ。<br>
+                    クイズ中に含まれる用語もタップすれば確認可能。<br>
+                    各章約30問AI生成。(計390問以上)<br>    
+                </div>
+                
+                <div style="width: 100%; margin-bottom: 20px;">
+                    <p style="text-align:left; font-size:0.9rem; font-weight:bold; color:#4A5568; margin-bottom:8px;">学習したい章を選択</p>
+                    <div class="chapter-grid" style="grid-template-columns: 1fr 1fr;">
+                        <button class="chapter-btn" onclick="startQuiz('chapter', 1)">第1章</button>
+                        <button class="chapter-btn" onclick="startQuiz('chapter', 2)">第2章</button>
+                        <button class="chapter-btn" onclick="startQuiz('chapter', 3)">第3章</button>
+                        <button class="chapter-btn" onclick="startQuiz('chapter', 4)">第4章</button>
+                        <button class="chapter-btn" onclick="startQuiz('chapter', 5)">第5章</button>
+                        <button class="chapter-btn" onclick="startQuiz('chapter', 6)">第6章</button>
+                        <button class="chapter-btn" onclick="startQuiz('chapter', 7)">第7章</button>
+                        <button class="chapter-btn" onclick="startQuiz('chapter', 8)">第8章</button>
+                        <button class="chapter-btn" onclick="startQuiz('chapter', 9)">第9章</button>
+                        <button class="chapter-btn" onclick="startQuiz('chapter', 10)">第10章</button>
+                        <button class="chapter-btn" onclick="startQuiz('chapter', 11)">第11章</button>
+                        <button class="chapter-btn" onclick="startQuiz('chapter', 12)">第12章</button>
+                        <button class="chapter-btn" style="grid-column: span 2;" onclick="startQuiz('chapter', 13)">第13章</button>
+                    </div>
+                </div>
+
+                <div class="action-container" style="width: 100%; gap: 12px; padding-top:0;">
+                    <button class="primary-btn" onclick="startQuiz('all')">すべての章からランダム出題</button>
+                    <button class="secondary-btn" onclick="startQuiz('review')">間違えた問題を解く (${globalStats.wrongIds.length}問)</button>
+                    <button class="secondary-btn" style="background-color:#D69E2E;" onclick="startQuiz('bookmark')">★タグ付け問題を解く (${globalStats.bookmarkedIds.length}問)</button>
+                </div>
+            </div>
+        `;
+    }
+
+    function startQuiz(mode, chapterNum = null) {
+        if (typeof allQuestionsPool === 'undefined' || allQuestionsPool.length === 0) {
+            alert("問題データが読み込まれていません。\nquiz_data.js が同じフォルダにあるか確認してください。");
+            return;
+        }
+
+        let pool = [];
+        if (mode === 'chapter') {
+            pool = allQuestionsPool.filter(q => q.chapter === chapterNum);
+            currentModeName = `第${chapterNum}章 集中モード`;
+            if(pool.length === 0) { alert(`第${chapterNum}章の問題がまだ追加されていません。`); return; }
+        } else if (mode === 'review') {
+            pool = allQuestionsPool.filter(q => globalStats.wrongIds.includes(q.id));
+            currentModeName = "弱点復習モード";
+            if(pool.length === 0) { alert("間違えた問題の履歴がありません！"); return; }
+        } else if (mode === 'bookmark') {
+            pool = allQuestionsPool.filter(q => globalStats.bookmarkedIds.includes(q.id));
+            currentModeName = "ブックマークモード";
+            if(pool.length === 0) { alert("★タグ付け（ブックマーク）された問題がありません。"); return; }
+        } else if (mode === 'all') {
+            pool = [...allQuestionsPool];
+            currentModeName = "全章ランダムモード";
+        }
+
+        currentQuizList = pool.sort(() => 0.5 - Math.random()).slice(0, 10);
+        
+        document.getElementById("quiz-content").innerHTML = `
+            <div class="meta-info">
+                <div class="meta-left">
+                    <span id="q-number">第 1 問</span>
+                    <span class="category-badge" id="q-pattern">${currentModeName}</span>
+                </div>
+                <button class="bookmark-btn" id="bookmark-icon" onclick="toggleBookmark()">☆</button>
+            </div>
+            <div class="question-text" id="q-text"></div>
+            <div class="options-container" id="options"></div>
+            <div class="result-panel" id="result-panel">
+                <div class="result-title" id="result-title"></div>
+                <div class="explanation" id="explanation"></div>
+            </div>
+            <div class="action-container" id="action-area"></div>
+        `;
+
+        currentIndex = 0; sessionScore = 0; loadQuestion();
+    }
+
+    function abortQuiz() {
+        if(confirm("クイズを中断してホーム画面に戻りますか？\n（現在のスコアは記録されず破棄されます）")) {
+            clearInterval(timerInterval);
+            showStartScreen();
+        }
+    }
+
+    function loadQuestion() {
+        clearInterval(timerInterval);
+        selectedOptionIndex = null; isAnswerSubmitted = false;
+        document.getElementById("result-panel").style.display = "none";
+        
+        const actionArea = document.getElementById("action-area");
+        actionArea.innerHTML = `
+            <button class="primary-btn" id="submit-btn" onclick="submitAnswer()" disabled>解答する</button>
+            <button class="abort-btn" onclick="abortQuiz()">クイズを中断して戻る</button>
+        `;
+        
+        const q = currentQuizList[currentIndex];
+        document.getElementById("progress").style.width = (currentIndex / currentQuizList.length) * 100 + "%";
+        
+        const bookmarkIcon = document.getElementById("bookmark-icon");
+        if (globalStats.bookmarkedIds.includes(q.id)) {
+            bookmarkIcon.classList.add("active"); bookmarkIcon.innerText = "★";
+        } else {
+            bookmarkIcon.classList.remove("active"); bookmarkIcon.innerText = "☆";
+        }
+        
+        document.getElementById("q-number").innerText = `第 ${currentIndex + 1} 問 / 全 ${currentQuizList.length} 問`;
+        document.getElementById("q-text").innerHTML = highlightTerms(`【第${q.chapter}章】<br>` + q.text);
+        
+        const optionsContainer = document.getElementById("options");
+        optionsContainer.innerHTML = "";
+        
+        q.options.forEach((option, index) => {
+            const optBtn = document.createElement("button");
+            optBtn.className = "option-btn";
+            optBtn.innerHTML = `${index + 1}. ` + highlightTerms(option);
+            optBtn.onclick = () => selectOption(index, optBtn);
+            optionsContainer.appendChild(optBtn);
+        });
+
+        timeLeft = 60;
+        const timerBar = document.getElementById("timer-bar");
+        timerBar.style.width = "100%";
+        
+        timerInterval = setInterval(() => {
+            timeLeft--; timerBar.style.width = (timeLeft / 60) * 100 + "%";
+            if (timeLeft <= 0) { clearInterval(timerInterval); autoTimeout(); }
+        }, 1000);
+    }
+
+    function selectOption(index, btnElement) {
+        if (isAnswerSubmitted) return;
+        document.querySelectorAll(".option-btn").forEach(b => b.classList.remove("selected"));
+        btnElement.classList.add("selected");
+        selectedOptionIndex = index;
+        document.getElementById("submit-btn").disabled = false;
+    }
+
+    function autoTimeout() { selectedOptionIndex = -1; submitAnswer(); }
+
+    function submitAnswer() {
+        if (isAnswerSubmitted) return;
+        isAnswerSubmitted = true; clearInterval(timerInterval);
+        
+        const q = currentQuizList[currentIndex];
+        const buttons = document.querySelectorAll(".option-btn");
+        const isCorrect = (selectedOptionIndex === q.answer);
+        
+        buttons.forEach((btn, idx) => {
+            btn.classList.remove("selected");
+            if (idx === q.answer) btn.classList.add("correct");
+            else if (idx === selectedOptionIndex && !isCorrect) btn.classList.add("incorrect");
+            btn.onclick = null;
+        });
+        
+        if (isCorrect) {
+            playSound('correct'); triggerVibrate('correct');
+            globalStats.wrongIds = globalStats.wrongIds.filter(id => id !== q.id);
+            sessionScore++;
+        } else {
+            playSound('incorrect'); triggerVibrate('incorrect');
+            if (!globalStats.wrongIds.includes(q.id)) globalStats.wrongIds.push(q.id);
+        }
+        
+        // --- 📊 成績統計の更新処理 ---
+        globalStats.totalQuestions++;
+        if(isCorrect) globalStats.correctAnswers++;
+        
+        // 章ごとの統計更新
+        if (!globalStats.chapterStats) globalStats.chapterStats = {};
+        if (!globalStats.chapterStats[q.chapter]) globalStats.chapterStats[q.chapter] = { total: 0, correct: 0 };
+        globalStats.chapterStats[q.chapter].total++;
+        if(isCorrect) globalStats.chapterStats[q.chapter].correct++;
+        
+        localStorage.setItem('mcpc_v8_stats', JSON.stringify(globalStats));
+        
+        const explainPrefix = (selectedOptionIndex === -1) ? "<b style='color:var(--error-color)'>【時間切れ】</b> " : "";
+        const panel = document.getElementById("result-panel");
+        panel.style.display = "block";
+        document.getElementById("explanation").innerHTML = highlightTerms(explainPrefix + q.explain);
+        if (isCorrect) {
+            panel.className = "result-panel correct-panel"; document.getElementById("result-title").innerText = "⭕ 正解！";
+        } else {
+            panel.className = "result-panel incorrect-panel"; document.getElementById("result-title").innerText = "❌ 不正解...";
+        }
+        
+        const actionArea = document.getElementById("action-area");
+        if (currentIndex < currentQuizList.length - 1) {
+            actionArea.innerHTML = `
+                <button class="primary-btn" onclick="nextQuestion()">次の問題へ</button>
+                <button class="abort-btn" onclick="abortQuiz()">クイズを中断して戻る</button>
+            `;
+        } else {
+            actionArea.innerHTML = `<button class="primary-btn" onclick="showEndScreen()">クイズ結果へ</button>`;
+        }
+    }
+
+    function nextQuestion() { currentIndex++; loadQuestion(); }
+
+    function toggleBookmark() {
+        const q = currentQuizList[currentIndex];
+        const icon = document.getElementById("bookmark-icon");
+        const index = globalStats.bookmarkedIds.indexOf(q.id);
+        if (index > -1) {
+            globalStats.bookmarkedIds.splice(index, 1);
+            icon.classList.remove("active"); icon.innerText = "☆";
+        } else {
+            globalStats.bookmarkedIds.push(q.id);
+            icon.classList.add("active"); icon.innerText = "★";
+        }
+        localStorage.setItem('mcpc_v8_stats', JSON.stringify(globalStats));
+    }
+
+    function showEndScreen() {
+        document.getElementById("progress").style.width = "100%";
+        document.getElementById("timer-bar").style.width = "0%";
+        document.getElementById("quiz-content").innerHTML = `
+            <div class="question-text" style="text-align:center; margin-top:40px;">
+                <div style="font-size:1rem; color:#718096; margin-bottom:10px;">${currentModeName} 終了</div>
+                スコア: <span style="font-size:2.5rem; color:var(--primary-color);">${sessionScore} / ${currentQuizList.length}</span> 問正解
+            </div>
+            <div class="action-container" style="margin-top:40px;">
+                <button class="primary-btn" onclick="showStartScreen()">タイトル（スタート画面）へ戻る</button>
+            </div>
+        `;
+    }
+
+    function showGlossaryListScreen() {
+        if (typeof categorizedGlossary === 'undefined') {
+            alert("用語集データが読み込まれていません。\nglossary.js が同じフォルダにあるか確認してください。");
+            return;
+        }
+
+        clearInterval(timerInterval);
+        document.getElementById("progress").style.width = "0%";
+        document.getElementById("timer-bar").style.width = "0%";
+
+        let html = `<div class="glossary-screen-title">用語辞書</div>`;
+
+        categorizedGlossary.forEach(cat => {
+            html += `
+                <div class="glossary-category">
+                    <div class="category-header">${cat.category}</div>
+                    <div class="term-grid">
+            `;
+            Object.keys(cat.terms).forEach(term => {
+                html += `<button class="term-btn" onclick="showGlossary('${term}', event)">${term}</button>`;
+            });
+            html += `</div></div>`;
+        });
+
+        html += `
+            <div class="action-container" style="margin-top: 20px;">
+                <button class="primary-btn" onclick="showStartScreen()">タイトルへ戻る</button>
+            </div>
+        `;
+
+        document.getElementById("quiz-content").innerHTML = html;
+    }
+
+    function showAnalysisModal() {
+        const total = globalStats.totalQuestions;
+        const correct = globalStats.correctAnswers;
+        const totalRate = total > 0 ? Math.round((correct / total) * 100) : 0;
+        
+        let html = `
+            <div class="stat-total">全体正答率: ${totalRate}%</div>
+            <div style="font-size:0.85rem; color:#718096; text-align:center; margin-bottom:15px;">(累計：${correct}問 / ${total}問)</div>
+            
+            <div class="category-header" style="text-align:center;">章別成績表</div>
+            <div style="margin-bottom:15px; max-height:300px; overflow-y:auto;">
+        `;
+
+        // 全章をループして表示
+        for(let i = 1; i <= 13; i++) {
+            const chData = globalStats.chapterStats ? globalStats.chapterStats[i] : null;
+            const chTotal = chData ? chData.total : 0;
+            const chCorrect = chData ? chData.correct : 0;
+            const chRate = chTotal > 0 ? Math.round((chCorrect / chTotal) * 100) : 0;
+            
+            html += `
+                <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #EDF2F7; font-size:0.9rem;">
+                    <span>第${i}章</span>
+                    <span><b>${chRate}%</b> (${chCorrect}/${chTotal}問)</span>
+                </div>
+            `;
+        }
+        html += `</div>`;
+
+        html += `
+            <div style="display:flex; justify-content:space-between; margin-bottom:15px; font-size:0.9rem; background:#EDF2F7; padding:10px; border-radius:8px;">
+                <span>弱点: <b>${globalStats.wrongIds.length}問</b></span>
+                <span>⭐: <b>${globalStats.bookmarkedIds.length}問</b></span>
+            </div>
+            <button onclick="if(confirm('成績をリセットしますか？')){localStorage.removeItem('mcpc_v8_stats'); location.reload();}" style="width:100%; padding:10px; border:1px dashed #A0AEC0; background:none; border-radius:6px; cursor:pointer;">全データをリセットする</button>
+        `;
+        openModal("学習データ分析", html);
+    }
+
+    function showBookmarkModal() {
+        if (typeof allQuestionsPool === 'undefined') return;
+        const favs = allQuestionsPool.filter(q => globalStats.bookmarkedIds.includes(q.id));
+        if (favs.length === 0) { openModal("復習帳", "<p style='text-align:center;'>現在登録されている問題はありません。</p>"); return; }
+        let html = `<button class="primary-btn" style="margin-bottom:15px; padding:10px; font-size:0.95rem;" onclick="closeModal(event); startQuiz('bookmark');">⭐ ブックマーク問題からテストを開く</button>`;
+        favs.forEach((q, idx) => {
+            html += `<div class="stat-card" style="font-size:0.9rem;"><div style="font-weight:bold; color:var(--primary-color);">No.${idx+1} [第${q.chapter}章]</div><div>${q.text}</div></div>`;
+        });
+        openModal(`復習帳 (${favs.length}問)`, html);
+    }
+
+    function showGlossary(term, event) {
+        if (event) event.stopPropagation();
+        
+        const dict = (typeof glossaryDict !== 'undefined' && Object.keys(glossaryDict).length > 0) ? glossaryDict : window.glossaryDict;
+        
+        if (dict && dict[term]) {
+            openModal(`専門用語：${term}`, dict[term]);
+        } else {
+            openModal(`専門用語：${term}`, `<span style="color:var(--error-color); font-weight:bold;">解説データが読み込めません。</span><br><br>原因として、辞書データ（glossary.js）にこの単語が登録されていないか、文字コード（UTF-8）の不一致による表記のズレが考えられます。`);
+        }
+    }
+
+    function openModal(title, bodyHtml) {
+        document.getElementById("modal-title").innerText = title;
+        document.getElementById("modal-body").innerHTML = bodyHtml;
+        document.getElementById("modal").style.display = "flex";
+    }
+
+    function closeModal(event) {
+        if(event) event.stopPropagation();
+        document.getElementById("modal").style.display = "none";
+    }
+
+    window.onload = () => showStartScreen();
+</script>
+</body>
+</html>
