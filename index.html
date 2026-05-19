@@ -73,17 +73,31 @@
         }
         .start-title { font-size: 1.4rem; font-weight: bold; color: var(--primary-color); margin-bottom: 10px; }
         .start-description { font-size: 0.9rem; color: #4A5568; line-height: 1.5; margin-bottom: 25px; }
-
-        /* 💡変更点：13章まで収まるように3列スクロール表示に変更 */
+        
         .chapter-grid {
-            display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%; margin-bottom: 20px;
-            max-height: 200px; overflow-y: auto; padding-right: 5px;
+            display: grid; 
+            grid-template-columns: repeat(2, 1fr); /* 3列から2列に変更 */
+            gap: 10px; /* ボタン同士の隙間を少し広げる */
+            width: 100%; 
+            margin-top: 40px; /* 「一列分下に」移動 */
+            margin-bottom: 20px;
+            max-height: 300px; /* 少し高さを増やしてスクロールしやすく */
+            overflow-y: auto; 
+            padding-right: 10px;
         }
+        
         .chapter-btn {
-            background-color: #EBF8FF; color: #2B6CB0; border: 2px solid #BEE3F8;
-            padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer;
-            transition: all 0.2s; font-size: 0.85rem;
+            background-color: #EBF8FF; 
+            color: #2B6CB0; 
+            border: 2px solid #BEE3F8;
+            padding: 6%; /* パディングを増やしてボタンを大きく */
+            border-radius: 6%; 
+            font-weight: bold; 
+            cursor: pointer;
+            transition: all 0.2s; 
+            font-size: 1.0rem; /* 文字サイズも少し大きく */
         }
+
         .chapter-btn:active { background-color: #BEE3F8; transform: scale(0.98); }
 
         .meta-info { display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; color: #718096; margin-bottom: 15px; }
@@ -112,7 +126,13 @@
         .incorrect-panel { background-color: #FFF5F5; border-left: 5px solid var(--error-color); color: #742A2A; }
         .explanation { font-size: 0.95rem; line-height: 1.6; margin-top: 8px; }
 
-        .action-container { margin-top: auto; padding-top: 10px; display: flex; flex-direction: column; gap: 10px; }
+        .action-container {
+            margin-top: 20px; /* auto から変更 */
+            padding-top: 10px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 10px; 
+        }
         .primary-btn { width: 100%; background-color: var(--secondary-color); color: white; border: none; padding: 15px; border-radius: 8px; font-size: 1.05rem; font-weight: bold; cursor: pointer; }
         .primary-btn:disabled { background-color: #A0AEC0; cursor: not-allowed; }
         .secondary-btn { width: 100%; background-color: #4A5568; color: white; border: none; padding: 15px; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; }
@@ -272,7 +292,7 @@
                 
                 <div style="width: 100%; margin-bottom: 20px;">
                     <p style="text-align:left; font-size:0.9rem; font-weight:bold; color:#4A5568; margin-bottom:8px;">学習したい章を選択</p>
-                    <div class="chapter-grid" style="grid-template-columns: 1fr 1fr;">
+                    <div class="chapter-grid">
                         <button class="chapter-btn" onclick="startQuiz('chapter', 1)">第1章</button>
                         <button class="chapter-btn" onclick="startQuiz('chapter', 2)">第2章</button>
                         <button class="chapter-btn" onclick="startQuiz('chapter', 3)">第3章</button>
@@ -289,11 +309,11 @@
                     </div>
                 </div>
 
-                <div class="action-container" style="width: 100%; gap: 12px; padding-top:0;">
+                <div class="action-container" style="width: 100%; gap: 12px;">
                     <button class="primary-btn" onclick="startQuiz('all')">すべての章からランダム出題</button>
                     <button class="secondary-btn" onclick="startQuiz('review')">間違えた問題を解く (${globalStats.wrongIds.length}問)</button>
                     <button class="secondary-btn" style="background-color:#D69E2E;" onclick="startQuiz('bookmark')">★タグ付け問題を解く (${globalStats.bookmarkedIds.length}問)</button>
-                </div>
+                    </div>
             </div>
         `;
     }
