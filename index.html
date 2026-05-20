@@ -325,8 +325,8 @@
                 </div>
 
                 <div class="action-container" style="width: 100%;">
-                    <button class="primary-btn" onclick="startQuiz('mock')">📝 模擬試験モード (100問100分)</button>
-                    <button class="primary-btn" style="background-color:#38A169;" onclick="startQuiz('weighted')">🚀 苦手克服 重み付け出題 (10問)</button>
+                    <button class="primary-btn" onclick="startQuiz('mock')">模擬試験モード (100問100分)</button>
+                    <button class="primary-btn" style="background-color:#38A169;" onclick="startQuiz('weighted')">苦手克服 重み付け出題</button>
                     <button class="primary-btn" onclick="startQuiz('all')">すべての章からランダム出題</button>
                     <button class="secondary-btn" onclick="startQuiz('review')">間違えた問題を解く (${globalStats.wrongIds.length}問)</button>
                     <button class="secondary-btn" style="background-color:#D69E2E;" onclick="startQuiz('bookmark')">★タグ付け問題を解く (${globalStats.bookmarkedIds.length}問)</button>
@@ -693,7 +693,7 @@
         if (typeof allQuestionsPool === 'undefined') return;
         const favs = allQuestionsPool.filter(q => globalStats.bookmarkedIds.includes(q.id));
         if (favs.length === 0) { openModal("復習帳", "<p style='text-align:center;'>現在登録されている問題はありません。</p>"); return; }
-        let html = `<button class="primary-btn" style="margin-bottom:15px; padding:10px; font-size:0.95rem;" onclick="closeModal(event); startQuiz('bookmark');">⭐ ブックマーク問題からテストを開く</button>`;
+        let html = `<button class="primary-btn" style="margin-bottom:15px; padding:10px; font-size:0.95rem;" onclick="closeModal(event); startQuiz('bookmark');">★ ブックマーク問題からテストを開く</button>`;
         favs.forEach((q, idx) => {
             html += `<div class="stat-card" style="font-size:0.9rem;"><div style="font-weight:bold; color:var(--primary-color);">No.${idx+1} [第${q.chapter}章]</div><div>${q.text}</div></div>`;
         });
