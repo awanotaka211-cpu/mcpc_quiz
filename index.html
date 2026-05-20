@@ -72,16 +72,17 @@
             text-align: center; flex-grow: 1; padding: 10px;
         }
         .start-title { font-size: 1.4rem; font-weight: bold; color: var(--primary-color); margin-bottom: 10px; }
-        .start-description { font-size: 0.9rem; color: #4A5568; line-height: 1.5; margin-bottom: 25px; }
+        .start-description { font-size: 0.9rem; color: #4A5568; line-height: 1.5; margin-bottom: 15px; } /* 余白を縮小 */
         
+        /* 💡変更点：不自然な空白を無くし、上に詰める */
         .chapter-grid {
             display: grid; 
-            grid-template-columns: repeat(2, 1fr); /* 3列から2列に変更 */
-            gap: 10px; /* ボタン同士の隙間を少し広げる */
+            grid-template-columns: repeat(2, 1fr); 
+            gap: 10px; 
             width: 100%; 
-            margin-top: 40px; /* 「一列分下に」移動 */
-            margin-bottom: 20px;
-            max-height: 300px; /* 少し高さを増やしてスクロールしやすく */
+            margin-top: 0px; /* 40pxから0pxへ変更して上に詰める */
+            margin-bottom: 10px; /* 20pxから縮小 */
+            max-height: 300px; 
             overflow-y: auto; 
             padding-right: 10px;
         }
@@ -90,12 +91,12 @@
             background-color: #EBF8FF; 
             color: #2B6CB0; 
             border: 2px solid #BEE3F8;
-            padding: 6%; /* パディングを増やしてボタンを大きく */
+            padding: 6%; 
             border-radius: 6%; 
             font-weight: bold; 
             cursor: pointer;
             transition: all 0.2s; 
-            font-size: 1.0rem; /* 文字サイズも少し大きく */
+            font-size: 1.0rem; 
         }
 
         .chapter-btn:active { background-color: #BEE3F8; transform: scale(0.98); }
@@ -126,9 +127,10 @@
         .incorrect-panel { background-color: #FFF5F5; border-left: 5px solid var(--error-color); color: #742A2A; }
         .explanation { font-size: 0.95rem; line-height: 1.6; margin-top: 8px; }
 
+        /* 💡変更点：不要な余白を削除して上に詰める */
         .action-container {
-            margin-top: 20px; /* auto から変更 */
-            padding-top: 10px; 
+            margin-top: 0px; 
+            padding-top: 0px; 
             display: flex; 
             flex-direction: column; 
             gap: 10px; 
@@ -179,6 +181,19 @@
         
         .stat-card { background: #F7FAFC; border: 1px solid #E2E8F0; padding: 12px; border-radius: 8px; margin-bottom: 10px; }
         .stat-total { font-size: 1.4rem; font-weight: bold; text-align: center; color: var(--primary-color); margin: 15px 0; }
+
+        .search-input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 2px solid #E2E8F0;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .search-input:focus {
+            border-color: var(--highlight-color);
+        }
     </style>
 </head>
 <body>
@@ -232,8 +247,9 @@
     let currentModeName = "";
 
     let globalStats = JSON.parse(localStorage.getItem('mcpc_v8_stats')) || {
-        totalQuestions: 0, correctAnswers: 0, wrongIds: [], bookmarkedIds: [], chapterStats: {}
+        totalQuestions: 0, correctAnswers: 0, wrongIds: [], bookmarkedIds: [], chapterStats: {}, wrongCounts: {}
     };
+    if (!globalStats.wrongCounts) globalStats.wrongCounts = {};
 
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     function playSound(type) {
@@ -290,8 +306,7 @@
                     各章約30問AI生成。(計390問以上)<br>    
                 </div>
                 
-                <div style="width: 100%; margin-bottom: 20px;">
-                    <p style="text-align:left; font-size:0.9rem; font-weight:bold; color:#4A5568; margin-bottom:8px;">学習したい章を選択</p>
+                <div style="width: 100%; margin-bottom: 10px;"> <p style="text-align:left; font-size:0.9rem; font-weight:bold; color:#4A5568; margin-bottom:8px;">学習したい章を選択</p>
                     <div class="chapter-grid">
                         <button class="chapter-btn" onclick="startQuiz('chapter', 1)">第1章</button>
                         <button class="chapter-btn" onclick="startQuiz('chapter', 2)">第2章</button>
@@ -309,11 +324,13 @@
                     </div>
                 </div>
 
-                <div class="action-container" style="width: 100%; gap: 12px;">
+                <div class="action-container" style="width: 100%;">
+                    <button class="primary-btn" onclick="startQuiz('mock')">📝 模擬試験モード (100問100分)</button>
+                    <button class="primary-btn" style="background-color:#38A169;" onclick="startQuiz('weighted')">🚀 苦手克服 重み付け出題 (10問)</button>
                     <button class="primary-btn" onclick="startQuiz('all')">すべての章からランダム出題</button>
                     <button class="secondary-btn" onclick="startQuiz('review')">間違えた問題を解く (${globalStats.wrongIds.length}問)</button>
                     <button class="secondary-btn" style="background-color:#D69E2E;" onclick="startQuiz('bookmark')">★タグ付け問題を解く (${globalStats.bookmarkedIds.length}問)</button>
-                    </div>
+                </div>
             </div>
         `;
     }
@@ -340,9 +357,25 @@
         } else if (mode === 'all') {
             pool = [...allQuestionsPool];
             currentModeName = "全章ランダムモード";
+        } else if (mode === 'mock') {
+            pool = [...allQuestionsPool];
+            currentModeName = "模擬試験モード (100問)";
+        } else if (mode === 'weighted') {
+            pool = [...allQuestionsPool];
+            currentModeName = "苦手克服 重点モード";
         }
 
-        currentQuizList = pool.sort(() => 0.5 - Math.random()).slice(0, 10);
+        if (mode === 'mock') {
+            currentQuizList = pool.sort(() => 0.5 - Math.random()).slice(0, 100);
+        } else if (mode === 'weighted') {
+            currentQuizList = pool.sort((a, b) => {
+                const wA = (globalStats.wrongCounts[a.id] || 0) + Math.random();
+                const wB = (globalStats.wrongCounts[b.id] || 0) + Math.random();
+                return wB - wA;
+            }).slice(0, 10);
+        } else {
+            currentQuizList = pool.sort(() => 0.5 - Math.random()).slice(0, 10);
+        }
         
         document.getElementById("quiz-content").innerHTML = `
             <div class="meta-info">
@@ -444,17 +477,19 @@
         if (isCorrect) {
             playSound('correct'); triggerVibrate('correct');
             globalStats.wrongIds = globalStats.wrongIds.filter(id => id !== q.id);
+            if (globalStats.wrongCounts[q.id]) {
+                globalStats.wrongCounts[q.id] = Math.max(0, globalStats.wrongCounts[q.id] - 1);
+            }
             sessionScore++;
         } else {
             playSound('incorrect'); triggerVibrate('incorrect');
             if (!globalStats.wrongIds.includes(q.id)) globalStats.wrongIds.push(q.id);
+            globalStats.wrongCounts[q.id] = (globalStats.wrongCounts[q.id] || 0) + 1;
         }
         
-        // --- 📊 成績統計の更新処理 ---
         globalStats.totalQuestions++;
         if(isCorrect) globalStats.correctAnswers++;
         
-        // 章ごとの統計更新
         if (!globalStats.chapterStats) globalStats.chapterStats = {};
         if (!globalStats.chapterStats[q.chapter]) globalStats.chapterStats[q.chapter] = { total: 0, correct: 0 };
         globalStats.chapterStats[q.chapter].total++;
@@ -525,6 +560,14 @@
 
         let html = `<div class="glossary-screen-title">用語辞書</div>`;
 
+        // 検索バーを追加
+        html += `
+            <div style="margin-bottom: 15px;">
+                <input type="text" id="glossary-search" class="search-input" placeholder="🔍 用語名や説明文で検索..." onkeyup="filterGlossary()">
+            </div>
+            <div id="glossary-container">
+        `;
+
         categorizedGlossary.forEach(cat => {
             html += `
                 <div class="glossary-category">
@@ -537,6 +580,8 @@
             html += `</div></div>`;
         });
 
+        html += `</div>`; // glossary-container の終了
+
         html += `
             <div class="action-container" style="margin-top: 20px;">
                 <button class="primary-btn" onclick="showStartScreen()">タイトルへ戻る</button>
@@ -546,12 +591,72 @@
         document.getElementById("quiz-content").innerHTML = html;
     }
 
+    // 💡追加機能対応：検索バーで入力された文字で用語を絞り込む関数
+    function filterGlossary() {
+        const query = document.getElementById('glossary-search').value.toLowerCase();
+        const categories = document.querySelectorAll('.glossary-category');
+        const dict = (typeof glossaryDict !== 'undefined' && Object.keys(glossaryDict).length > 0) ? glossaryDict : window.glossaryDict;
+        
+        categories.forEach(category => {
+            let hasVisibleTerm = false;
+            const terms = category.querySelectorAll('.term-btn');
+            
+            terms.forEach(term => {
+                const termName = term.innerText;
+                const termText = termName.toLowerCase();
+                const descText = (dict[termName] || "").toLowerCase();
+                
+                // 用語名または説明文に検索文字が含まれていれば表示する
+                if (termText.includes(query) || descText.includes(query)) {
+                    term.style.display = "inline-block";
+                    hasVisibleTerm = true;
+                } else {
+                    term.style.display = "none";
+                }
+            });
+            
+            // カテゴリ内に表示できる用語が1つもなければ、カテゴリのタイトルごと非表示にする
+            if (hasVisibleTerm) {
+                category.style.display = "block";
+            } else {
+                category.style.display = "none";
+            }
+        });
+    }
+
+    function getRadarChartSVG(statsObj) {
+        let grid = "";
+        for (let level=1; level<=5; level++) {
+            let pts = ""; const r = (100/5)*level;
+            for(let i=0; i<13; i++) { 
+                const a = (i*2*Math.PI/13)-(Math.PI/2); 
+                pts += (i===0?"M":"L") + (125+r*Math.cos(a)) + "," + (125+r*Math.sin(a)) + " "; 
+            }
+            grid += `<path d="${pts}Z" fill="none" stroke="#E2E8F0" stroke-width="1"/>`;
+        }
+        let pts = "";
+        for(let i=0; i<13; i++) { 
+            const ch=i+1; 
+            const d=(statsObj[ch]||{total:0,correct:0}); 
+            const rate=d.total>0?(d.correct/d.total):0; 
+            const a=(i*2*Math.PI/13)-(Math.PI/2); 
+            pts += (i===0?"M":"L") + (125+100*rate*Math.cos(a)) + "," + (125+100*rate*Math.sin(a)) + " "; 
+        }
+        return `<svg width="250" height="250" viewBox="0 0 250 250">${grid}<path d="${pts}Z" fill="rgba(49,130,206,0.4)" stroke="#3182CE" stroke-width="2"/></svg>`;
+    }
+
     function showAnalysisModal() {
         const total = globalStats.totalQuestions;
         const correct = globalStats.correctAnswers;
         const totalRate = total > 0 ? Math.round((correct / total) * 100) : 0;
         
+        let chartHtml = getRadarChartSVG(globalStats.chapterStats || {});
+        
         let html = `
+            <div style="text-align:center; margin-bottom:15px;">
+                <div style="font-size:0.9rem; font-weight:bold; color:#4A5568; margin-bottom:5px;">章別 レーダーチャート</div>
+                ${chartHtml}
+            </div>
             <div class="stat-total">全体正答率: ${totalRate}%</div>
             <div style="font-size:0.85rem; color:#718096; text-align:center; margin-bottom:15px;">(累計：${correct}問 / ${total}問)</div>
             
@@ -559,7 +664,6 @@
             <div style="margin-bottom:15px; max-height:300px; overflow-y:auto;">
         `;
 
-        // 全章をループして表示
         for(let i = 1; i <= 13; i++) {
             const chData = globalStats.chapterStats ? globalStats.chapterStats[i] : null;
             const chTotal = chData ? chData.total : 0;
