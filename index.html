@@ -252,6 +252,16 @@
     if (!globalStats.wrongCounts) globalStats.wrongCounts = {};
 
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    // 【追加】Fisher-Yatesシャッフルアルゴリズム
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }    
+    
     function playSound(type) {
         try {
             const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
@@ -336,46 +346,46 @@
     }
 
     function startQuiz(mode, chapterNum = null) {
-        if (typeof allQuestionsPool === 'undefined' || allQuestionsPool.length === 0) {
-            alert("問題データが読み込まれていません。\nquiz_data.js が同じフォルダにあるか確認してください。");
-            return;
-        }
+    if (typeof allQuestionsPool === 'undefined' || allQuestionsPool.length === 0) {
+        alert("問題データが読み込まれていません。");
+        return;
+    }
 
-        let pool = [];
-        if (mode === 'chapter') {
-            pool = allQuestionsPool.filter(q => q.chapter === chapterNum);
-            currentModeName = `第${chapterNum}章 集中モード`;
-            if(pool.length === 0) { alert(`第${chapterNum}章の問題がまだ追加されていません。`); return; }
-        } else if (mode === 'review') {
-            pool = allQuestionsPool.filter(q => globalStats.wrongIds.includes(q.id));
-            currentModeName = "弱点復習モード";
-            if(pool.length === 0) { alert("間違えた問題の履歴がありません！"); return; }
-        } else if (mode === 'bookmark') {
-            pool = allQuestionsPool.filter(q => globalStats.bookmarkedIds.includes(q.id));
-            currentModeName = "ブックマークモード";
-            if(pool.length === 0) { alert("★タグ付け（ブックマーク）された問題がありません。"); return; }
-        } else if (mode === 'all') {
-            pool = [...allQuestionsPool];
-            currentModeName = "全章ランダムモード";
-        } else if (mode === 'mock') {
-            pool = [...allQuestionsPool];
-            currentModeName = "模擬試験モード (100問)";
-        } else if (mode === 'weighted') {
-            pool = [...allQuestionsPool];
-            currentModeName = "苦手克服 重点モード";
-        }
+    let pool = [];
+    // 1. 各モードごとのフィルタリング
+    if (mode === 'chapter') {
+        pool = allQuestionsPool.filter(q => q.chapter === chapterNum);
+        currentModeName = `第${chapterNum}章 集中モード`;
+        if(pool.length === 0) { alert("問題がありません。"); return; }
+    } else if (mode === 'review') {
+        pool = allQuestionsPool.filter(q => globalStats.wrongIds.includes(q.id));
+        currentModeName = "弱点復習モード";
+        if(pool.length === 0) { alert("履歴がありません！"); return; }
+    } else if (mode === 'bookmark') {
+        pool = allQuestionsPool.filter(q => globalStats.bookmarkedIds.includes(q.id));
+        currentModeName = "ブックマークモード";
+        if(pool.length === 0) { alert("問題がありません。"); return; }
+    } else {
+        // それ以外のモードは全問題から
+        pool = [...allQuestionsPool];
+        if (mode === 'all') currentModeName = "全章ランダムモード";
+        if (mode === 'mock') currentModeName = "模擬試験モード (100問)";
+        if (mode === 'weighted') currentModeName = "苦手克服 重点モード";
+    }
 
-        if (mode === 'mock') {
-            currentQuizList = pool.sort(() => 0.5 - Math.random()).slice(0, 100);
-        } else if (mode === 'weighted') {
-            currentQuizList = pool.sort((a, b) => {
-                const wA = (globalStats.wrongCounts[a.id] || 0) + Math.random();
-                const wB = (globalStats.wrongCounts[b.id] || 0) + Math.random();
-                return wB - wA;
-            }).slice(0, 10);
-        } else {
-            currentQuizList = pool.sort(() => 0.5 - Math.random()).slice(0, 10);
-        }
+    // 2. シャッフルまたは重み付け処理
+    if (mode === 'mock') {
+        currentQuizList = shuffleArray([...pool]).slice(0, 100);
+    } else if (mode === 'weighted') {
+        currentQuizList = pool.sort((a, b) => {
+            const wA = (globalStats.wrongCounts[a.id] || 0) + Math.random();
+            const wB = (globalStats.wrongCounts[b.id] || 0) + Math.random();
+            return wB - wA;
+        }).slice(0, 10);
+    } else {
+        // chapter, review, bookmark, all の場合はこちらでランダム化
+        currentQuizList = shuffleArray([...pool]).slice(0, 10);
+    }
         
         document.getElementById("quiz-content").innerHTML = `
             <div class="meta-info">
