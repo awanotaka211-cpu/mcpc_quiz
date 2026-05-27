@@ -200,6 +200,10 @@ const categorizedGlossary = [
         terms: {
             "テザリング": "スマホをアクセスポイント代わりにしてPC等をネットに繋ぐ機能。",
             "IEEE": "Institute of Electrical and Electronics Engineersとは、無線LAN（IEEE802.11）などの通信規格を策定する電気電子学会。",
+            "IEEE 802.20": "いつでもどこでも無線ブロードバンド(MBWA)",
+            "IEEE 802.16": "都市、街に電波を飛ばしてつなぐ(WiMAX)",
+            "IEEE 802.20": "屋内、同一フロアをつなぐ(無線LAN)",
+            "IEEE 802.20": "個人の周辺をつなぐ(Bluetooth)",
             "Bluetooth": "2.4GHz帯を利用し、数メートル程度の機器を繋ぐ近距離無線通信。",
             "FHSS": "Frequency Hopping Spread Spectrumとは、Bluetoothで干渉を避けるため、使用周波数を高速で切り替えるスペクトラム拡散方式。",
             "NFC": "Near Field Communicationとは、かざすだけで通信できる、数センチ程度の近距離無線通信の国際標準。",
